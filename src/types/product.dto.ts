@@ -9,6 +9,8 @@ export interface ProductDto {
   price?: number;
   buyPrice?: number;
   rentPricePerDay?: number;
+  /** Giá thuê tính theo lần (UI: nhãn /lần, không ghi chú % ngày kế). */
+  rentByTime?: boolean;
   images: string[];
   categoryId?: string;
   category?: string;

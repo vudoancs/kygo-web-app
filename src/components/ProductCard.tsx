@@ -68,6 +68,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </h3>
         </Link>
 
+        {product.productCode ? (
+          <p className="text-[9px] lg:text-xs text-gray-500 mb-1.5 lg:mb-2">
+            {t('productDetail.productCode')}:{' '}
+            <span className="font-medium text-gray-700">{product.productCode.slice(0, 5)}</span>
+          </p>
+        ) : null}
+
         {/* Pricing */}
         <div className="space-y-1 lg:space-y-2 mb-3 lg:mb-4">
           <div className="flex items-center gap-1.5 lg:gap-2">
@@ -76,12 +83,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5 lg:gap-2">
-              <span className="text-[9px] lg:text-xs text-gray-500">{t('products.rentPerDay')}:</span>
+              <span className="text-[9px] lg:text-xs text-gray-500">{t('products.rentPerTime')}:</span>
               <span className="font-bold text-[#b8465f] text-xs lg:text-sm">{formatPrice(product.rentPricePerDay)}</span>
             </div>
-            <p className="text-[8px] lg:text-[9px] text-gray-500 italic pl-0">
-              {t('products.extraDayNote')}
-            </p>
+            {!product.rentByTime ? (
+              <p className="text-[8px] lg:text-[9px] text-gray-500 italic pl-0">
+                {t('products.extraDayNote')}
+              </p>
+            ) : null}
           </div>
         </div>
 

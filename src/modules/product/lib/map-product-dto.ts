@@ -13,6 +13,7 @@ export function productFromDto(dto: ProductDto): Product {
     id: dto.id,
     name: dto.name,
     productCode: dto.sku,
+    rentByTime: dto.rentByTime,
     category: dto.category ?? 'dresses',
     subcategory: dto.subcategory ?? dto.slug ?? 'evening-gowns',
     description: dto.description ?? '',

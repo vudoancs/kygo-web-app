@@ -13,6 +13,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useProductDetailQuery } from '@/hooks/use-products-query';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
+import { useSimilarProductsQuery } from '@/hooks/use-products-query';
+import ProductCard from '../components/ProductCard';
+import ProductCardMobile from '../components/ProductCardMobile';
 
 const ProductDetail = () => {
   const params = useParams();
@@ -23,6 +26,7 @@ const ProductDetail = () => {
 
   const mockProduct = useMemo(() => products.find((p) => p.id === id), [id]);
   const detailQuery = useProductDetailQuery(id);
+  const similarQuery = useSimilarProductsQuery(id, 4);
 
   const product = useMemo((): Product | null => {
     if (!isPublicApiConfigured()) {
@@ -43,17 +47,80 @@ const ProductDetail = () => {
     detailQuery.isSuccess,
   ]);
 
+  const similarProducts = useMemo((): Product[] => {
+    if (!isPublicApiConfigured()) {
+      return products
+        .filter(
+          (p) =>
+            p.id !== product?.id &&
+            (p.category === product?.category ||
+              p.occasion.some((occ) => product?.occasion.includes(occ)) ||
+              p.style.some((st) => product?.style.includes(st))),
+        )
+        .slice(0, 4);
+    }
+    if (similarQuery.isSuccess && similarQuery.data?.items?.length) {
+      return similarQuery.data.items.map(productFromDto);
+    }
+    return [];
+  }, [product?.category, product?.id, product?.occasion, product?.style, similarQuery.data, similarQuery.isSuccess]);
+
   const apiLoading =
     isPublicApiConfigured() && detailQuery.isPending && !mockProduct;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
-  const [rentStartDate, setRentStartDate] = useState<Date | null>(new Date()); // Mặc định hôm nay
+  // Ngày khách chọn bắt đầu thuê (UI chọn ngày này).
+  const [rentStartDate, setRentStartDate] = useState<Date | null>(new Date());
   const [rentDuration, setRentDuration] = useState(3);
-  const [customDuration, setCustomDuration] = useState('');
+  const [rentDurationInput, setRentDurationInput] = useState('');
   const [actionType, setActionType] = useState<'rent' | 'buy'>('rent');
   const [activeTab, setActiveTab] = useState<'info' | 'reviews'>('info');
+
+  const addDays = (date: Date, days: number) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d;
+  };
+
+  const toLocalIsoDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const unavailableSet = useMemo(() => {
+    const dates = product?.unavailableDates ?? [];
+    return new Set(dates.map((x) => x.slice(0, 10)));
+  }, [product?.unavailableDates]);
+
+  const returnDate = useMemo(() => {
+    if (!rentStartDate) return null;
+    // Logic ngày: 1 ngày => trả cùng ngày; N ngày => tính từ ngày bắt đầu thuê + (N - 1) ngày.
+    return addDays(rentStartDate, Math.max(rentDuration - 1, 0));
+  }, [rentDuration, rentStartDate]);
+
+  useEffect(() => {
+    // Nếu đổi số ngày làm khoảng ngày bị trùng unavailableDates → yêu cầu chọn lại.
+    if (!rentStartDate) return;
+    const totalDays = Math.max(rentDuration, 1);
+    const blocked = Array.from({ length: totalDays }).some((_, i) =>
+      unavailableSet.has(toLocalIsoDate(addDays(rentStartDate, i))),
+    );
+
+    if (blocked) {
+      setRentStartDate(null);
+      alert(
+        language === 'vi'
+          ? 'Số ngày thuê mới làm trùng ngày đã đặt. Vui lòng chọn lại ngày bắt đầu thuê.'
+          : language === 'en'
+            ? 'The new duration conflicts with unavailable dates. Please choose the start date again.'
+            : '변경된 기간으로 인해 예약 불가 날짜와 충돌합니다. 시작 날짜를 다시 선택해주세요.',
+      );
+    }
+  }, [language, rentDuration, rentStartDate, unavailableSet]);
 
   useEffect(() => {
     if (!product) return;
@@ -101,17 +168,12 @@ const ProductDetail = () => {
   const calculateRentalTotal = () => {
     if (!rentStartDate || actionType !== 'rent') return 0;
     
-    const FIXED_DEPOSIT = 500000; // Tiền cọc cố định
-    let rentalPrice = product.rentPricePerDay; // Giá cho ngày đầu tiên
-    
-    // Từ ngày 2 trở đi, tính thêm 10%/ngày
-    if (rentDuration > 1) {
-      const extraDays = rentDuration - 1;
-      const extraFee = product.rentPricePerDay * 0.1 * extraDays;
-      rentalPrice += extraFee;
-    }
-    
-    return rentalPrice + FIXED_DEPOSIT;
+    // Giá 1 lần thuê mặc định là gói 3 ngày.
+    // Thuê 1 ngày: giảm 10%.
+    const base3Days = product.rentPricePerDay;
+    const rentalPrice = rentDuration === 1 ? Math.round(base3Days * 0.9) : base3Days;
+
+    return rentalPrice;
   };
 
   const handleAddToCart = () => {
@@ -121,11 +183,16 @@ const ProductDetail = () => {
     }
 
     if (actionType === 'rent' && (!rentStartDate || rentDuration <= 0)) {
-      alert(language === 'vi' ? 'Vui lòng chọn ngày bắt đầu và số ngày thuê' : language === 'en' ? 'Please select start date and duration' : '대여 시작일과 기간을 선택해주세요');
+      alert(
+        language === 'vi'
+          ? 'Vui lòng chọn ngày bắt đầu thuê và số ngày thuê'
+          : language === 'en'
+            ? 'Please select start date and duration'
+            : '시작 날짜와 기간을 선택해주세요',
+      );
       return;
     }
 
-    const FIXED_DEPOSIT = 500000;
     const cartItem = {
       id: `${product.id}-${Date.now()}`,
       productId: product.id,
@@ -133,11 +200,10 @@ const ProductDetail = () => {
       name: product.name,
       image: product.image,
       size: selectedSize,
-      price: actionType === 'buy' ? product.buyPrice : calculateRentalTotal() - FIXED_DEPOSIT,
+      price: actionType === 'buy' ? product.buyPrice : calculateRentalTotal(),
       ...(actionType === 'rent' && {
         rentStartDate: rentStartDate?.toISOString(),
         rentDuration: rentDuration,
-        deposit: FIXED_DEPOSIT,
       }),
     };
 
@@ -227,7 +293,7 @@ const ProductDetail = () => {
               <div className="space-y-1">
                 <p className="text-gray-600">{t('productDetail.brand')}: {product.brand}</p>
                 {product.productCode && (
-                  <p className="text-gray-600">{t('productDetail.productCode')}: <span className="font-medium text-gray-900">{product.productCode}</span></p>
+                  <p className="text-gray-600">{t('productDetail.productCode')}: <span className="font-medium text-gray-900">{product.productCode.slice(0, 5)}</span></p>
                 )}
               </div>
             </div>
@@ -270,7 +336,7 @@ const ProductDetail = () => {
               <div className="space-y-3">
                 <div>
                   <div className="flex justify-between items-baseline">
-                    <span className="text-gray-600">{t('products.rentPerDay')}:</span>
+                    <span className="text-gray-600">{t('products.rentPerTime')}:</span>
                     <div className="flex items-baseline gap-2">
                       {product.originalRentPriceDanang && (
                         <span className="text-gray-400 line-through text-sm">
@@ -285,11 +351,6 @@ const ProductDetail = () => {
                   <p className="text-xs text-gray-500 mt-1 text-right">
                     <span className="font-bold">{t('products.extraDayNote')}</span>
                   </p>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">{t('products.depositInfo')}:</span>
-                  <span className="font-semibold text-gray-900">{formatPrice(500000)}</span>
                 </div>
                 
                 <div className="pt-2 pb-2 border-t border-gray-200">
@@ -374,94 +435,136 @@ const ProductDetail = () => {
           {/* Rental Date Selection */}
           {actionType === 'rent' && (
             <div className="mb-6">
-              <label className="block font-semibold text-gray-900 mb-3">{t('products.selectStartDate')}</label>
+              <label className="block font-semibold text-gray-900 mb-3">
+                {language === 'vi'
+                  ? 'Chọn ngày bắt đầu thuê'
+                  : language === 'en'
+                    ? 'Select start date'
+                    : '시작 날짜 선택'}
+              </label>
+
               <RentalCalendar
                 unavailableDates={product.unavailableDates || []}
-                onDateSelect={setRentStartDate}
+                onDateSelect={(date) => {
+                  if (!date) {
+                    setRentStartDate(null);
+                    return;
+                  }
+
+                  const totalDays = Math.max(rentDuration, 1);
+                  const blocked = Array.from({ length: totalDays }).some((_, i) =>
+                    unavailableSet.has(toLocalIsoDate(addDays(date, i))),
+                  );
+
+                  if (blocked) {
+                    alert(
+                      language === 'vi'
+                        ? 'Khoảng ngày thuê có ngày đã được đặt. Vui lòng chọn ngày bắt đầu thuê khác.'
+                        : language === 'en'
+                          ? 'The rental range includes an unavailable day. Please choose another start date.'
+                          : '대여 기간에 예약 불가 날짜가 포함되어 있습니다. 다른 시작 날짜를 선택해주세요.',
+                    );
+                    return;
+                  }
+
+                  setRentStartDate(date);
+                }}
                 selectedDate={rentStartDate}
               />
 
-              {rentStartDate && (
-                <div className="mt-4">
-                  <label className="block font-semibold text-gray-900 mb-3">
-                    {language === 'vi' ? 'Số ngày thuê' : language === 'en' ? 'Rental Duration' : '대여 기간'}
-                  </label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {[1, 2, 3].map((days) => (
-                      <button
-                        key={days}
-                        onClick={() => {
-                          setRentDuration(days);
-                          setCustomDuration('');
-                        }}
-                        className={`flex-1 min-w-[80px] py-2 px-4 border rounded-lg font-medium transition-colors ${
-                          rentDuration === days && !customDuration
-                            ? 'bg-[#b8465f] text-white border-[#b8465f]'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#b8465f]'
-                        }`}
-                      >
-                        {days} {language === 'vi' ? 'ngày' : language === 'en' ? 'day' + (days > 1 ? 's' : '') : '일'}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder={language === 'vi' ? 'Hoặc nhập số ngày khác...' : language === 'en' ? 'Or enter custom days...' : '또는 사용자 지정 일수 입력...'}
-                      value={customDuration}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setCustomDuration(value);
-                        const numValue = parseInt(value);
-                        if (numValue > 0) {
-                          setRentDuration(numValue);
-                        }
+              <div className="mt-4">
+                <label className="block font-semibold text-gray-900 mb-2">
+                  {language === 'vi' ? 'Số ngày thuê' : language === 'en' ? 'Rental duration' : '대여 기간'}
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3].map((days) => (
+                    <button
+                      key={days}
+                      type="button"
+                      onClick={() => {
+                        setRentDuration(days);
+                        setRentDurationInput('');
                       }}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20 focus:border-[#b8465f]"
-                    />
-                    <span className="text-sm text-gray-500">{language === 'vi' ? 'ngày' : language === 'en' ? 'days' : '일'}</span>
-                  </div>
-                  
-                  {rentDuration > 0 && (
-                    <div className="mt-3 p-4 bg-rose-50 rounded-lg space-y-2.5">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 font-medium">{t('products.rentalPeriod')}:</span>
-                        <span className="text-gray-900 font-semibold">{rentDuration} {t('common.days')}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 font-medium">{t('products.pickupDate')}:</span>
-                        <span className="text-gray-900 font-semibold">
-                          10:00 - {rentStartDate.toLocaleDateString(
-                            language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'ko-KR'
-                          )}
+                      className={`flex-1 py-2 px-4 border rounded-lg font-medium transition-colors ${
+                        rentDuration === days
+                          ? 'bg-[#b8465f] text-white border-[#b8465f]'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-[#b8465f]'
+                      }`}
+                    >
+                      {days} {language === 'vi' ? 'ngày' : language === 'en' ? (days > 1 ? 'days' : 'day') : '일'}
+                      {days === 3 ? (
+                        <span className="ml-2 text-xs font-semibold opacity-90">
+                          {language === 'vi' ? '(giá chuẩn)' : language === 'en' ? '(base price)' : '(기본가)'}
                         </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 font-medium">{t('products.returnDate')}:</span>
-                        <span className="text-gray-900 font-semibold">
-                          10:00 - {new Date(rentStartDate.getTime() + rentDuration * 24 * 60 * 60 * 1000).toLocaleDateString(
-                            language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'ko-KR'
-                          )}
+                      ) : null}
+                      {days === 1 ? (
+                        <span className="ml-2 text-xs font-semibold opacity-90">
+                          {language === 'vi' ? '(-10%)' : language === 'en' ? '(-10%)' : '(-10%)'}
                         </span>
-                      </div>
-                      <div className="pt-2.5 border-t border-rose-200 space-y-1.5">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-700 font-medium">{t('products.totalRentalFee')}:</span>
-                          <span className="text-[#b8465f] font-bold">
-                            {formatPrice(calculateRentalTotal() - 500000)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-700 font-medium">{t('products.depositFee')}:</span>
-                          <span className="text-gray-900 font-semibold">
-                            {formatPrice(500000)}
-                          </span>
-                        </div>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-3 flex items-center gap-3">
+                  <input
+                    inputMode="numeric"
+                    value={rentDurationInput}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const cleaned = raw.replace(/[^\d]/g, '');
+                      setRentDurationInput(cleaned);
+
+                      if (!cleaned) return;
+                      const next = Number.parseInt(cleaned, 10);
+                      if (!Number.isFinite(next) || next <= 0) return;
+                      setRentDuration(next);
+                    }}
+                    placeholder={language === 'vi' ? 'Hoặc nhập số ngày khác...' : language === 'en' ? 'Or enter another number of days...' : '또는 다른 일수를 입력...'}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20 focus:border-[#b8465f] text-sm"
+                  />
+                  <span className="text-sm text-gray-500">
+                    {language === 'vi' ? 'ngày' : language === 'en' ? 'days' : '일'}
+                  </span>
+                </div>
+              </div>
+
+              {rentStartDate && returnDate && (
+                <div className="mt-4">
+                  <div className="mt-3 p-4 bg-rose-50 rounded-lg space-y-2.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-700 font-medium">{t('products.rentalPeriod')}:</span>
+                      <span className="text-gray-900 font-semibold">
+                        {rentDuration} {t('common.days')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-700 font-medium">
+                        {language === 'vi' ? 'Ngày bắt đầu thuê' : language === 'en' ? 'Start date' : '시작 날짜'}:
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {(rentDuration >= 2 ? '12:00' : '07:00')} - {rentStartDate.toLocaleDateString(
+                          language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'ko-KR'
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-700 font-medium">{t('products.returnDate')}:</span>
+                      <span className="text-gray-900 font-semibold">
+                        {(rentDuration >= 2 ? '12:00' : '24:00')} - {returnDate.toLocaleDateString(
+                          language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'ko-KR'
+                        )}
+                      </span>
+                    </div>
+                    <div className="pt-2.5 border-t border-rose-200 space-y-1.5">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-700 font-medium">{t('products.totalRentalFee')}:</span>
+                        <span className="text-[#b8465f] font-bold">
+                          {formatPrice(calculateRentalTotal())}
+                        </span>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
 
@@ -608,68 +711,18 @@ const ProductDetail = () => {
           {t('productDetail.similarProducts')}
         </h2>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products
-            .filter(p => 
-              p.id !== product.id && 
-              (p.category === product.category || 
-               p.occasion.some(occ => product.occasion.includes(occ)) ||
-               p.style.some(st => product.style.includes(st)))
-            )
-            .slice(0, 4)
-            .map((similarProduct) => (
-              <Link
-                key={similarProduct.id}
-                href={`/product/${similarProduct.id}`}
-                className="group"
-              >
-                <div className="relative aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden mb-3">
-                  <img
-                    src={similarProduct.image}
-                    alt={similarProduct.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  {similarProduct.badge && (
-                    <div className="absolute top-3 right-3">
-                      <span className={`px-3 py-1 text-xs font-bold text-white rounded-full ${
-                        similarProduct.badge === 'new' ? 'bg-green-500' :
-                        similarProduct.badge === 'sale' ? 'bg-red-500' :
-                        'bg-orange-500'
-                      }`}>
-                        {similarProduct.badge.toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <button className="absolute top-3 left-3 w-8 h-8 bg-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Heart className="w-4 h-4" />
-                  </button>
-                </div>
-                
-                <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-[#b8465f] transition-colors">
-                  {similarProduct.name}
-                </h3>
-                
-                <div className="space-y-1">
-                  <div className="flex items-baseline gap-2">
-                    {similarProduct.originalBuyPrice && (
-                      <span className="text-gray-400 line-through text-sm">
-                        {formatPrice(similarProduct.originalBuyPrice)}
-                      </span>
-                    )}
-                    <span className="font-bold text-gray-900">
-                      {formatPrice(similarProduct.buyPrice)}
-                    </span>
-                  </div>
-                  
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium text-[#b8465f]">
-                      {formatPrice(similarProduct.rentPricePerDay)}
-                    </span>
-                    <span className="text-gray-500">{t('common.perDay')}</span>
-                  </div>
-                </div>
-              </Link>
+        <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {similarProducts.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+
+        <div className="lg:hidden overflow-x-auto -mx-4 px-4">
+          <div className="flex gap-4">
+            {similarProducts.map((p) => (
+              <ProductCardMobile key={p.id} product={p} />
             ))}
+          </div>
         </div>
       </div>
     </div>

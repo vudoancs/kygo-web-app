@@ -3,12 +3,15 @@
 import React from 'react';
 import Link from 'next/link';
 import { Product } from '../data/products';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ProductCardMobileProps {
   product: Product;
 }
 
 const ProductCardMobile: React.FC<ProductCardMobileProps> = ({ product }) => {
+  const { t } = useLanguage();
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN').format(price) + ' đ';
   };
@@ -36,30 +39,44 @@ const ProductCardMobile: React.FC<ProductCardMobileProps> = ({ product }) => {
         {product.name}
       </h3>
 
+      {product.productCode ? (
+        <p className="text-[10px] text-gray-500 mb-2">
+          {t('productDetail.productCode')}:{' '}
+          <span className="font-medium text-gray-700">{product.productCode.slice(0, 5)}</span>
+        </p>
+      ) : null}
+
       {/* Buy Price Range */}
       <div className="mb-1">
         {product.originalBuyPrice ? (
           <div className="text-xs text-gray-700">
-            <span className="font-medium">Hàng: </span>
+            <span className="font-medium">{t('products.buy')}: </span>
             {formatPriceRange(product.buyPrice, product.originalBuyPrice)}
           </div>
         ) : (
           <div className="text-xs text-gray-700">
-            <span className="font-medium">Hàng: </span>
+            <span className="font-medium">{t('products.buy')}: </span>
             {formatPrice(product.buyPrice)}
           </div>
         )}
       </div>
 
-      {/* Rental Price Range */}
+      {/* Rental Price */}
       <div className="mb-2">
-        <div className="text-xs text-gray-700">
-          <span className="font-medium">Thuê: </span>
-          {formatPriceRange(
-            product.rentPriceDanang ?? product.rentPricePerDay,
-            product.rentPriceProvince ?? product.rentPricePerDay,
-          )}
-        </div>
+        {product.rentByTime ? (
+          <div className="text-xs text-gray-700">
+            <span className="font-medium">{t('products.rentPerTime')}: </span>
+            {formatPrice(product.rentPricePerDay)}
+          </div>
+        ) : (
+          <div className="text-xs text-gray-700">
+            <span className="font-medium">{t('products.rentPerTime')}: </span>
+            {formatPriceRange(
+              product.rentPriceDanang ?? product.rentPricePerDay,
+              product.rentPriceProvince ?? product.rentPricePerDay,
+            )}
+          </div>
+        )}
       </div>
 
       {/* Promotion Text */}

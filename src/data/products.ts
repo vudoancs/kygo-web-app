@@ -7,6 +7,8 @@ export interface Product {
   image: string;
   images: string[];
   productCode?: string;
+  /** true: giá thuê theo lần (card hiển thị nhãn /lần, không ghi chú phụ phí ngày). */
+  rentByTime?: boolean;
   buyPrice: number;
   originalBuyPrice?: number; // Original price before discount
   rentPricePerDay: number;

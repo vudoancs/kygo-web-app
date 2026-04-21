@@ -28,18 +28,20 @@ const Home = () => {
   const localizedStyles = getLocalizedStyles(language);
 
   const newArrivals = useMemo(() => {
-    if (api && newQuery.isSuccess && (newQuery.data?.items?.length ?? 0) > 0) {
-      return newQuery.data!.items.map(productFromDto);
-    }
-    return products.filter((p) => p.badge === 'hot' || p.badge === 'new').slice(0, 8);
-  }, [api, newQuery.isSuccess, newQuery.data]);
+    const fallback = products.filter((p) => p.badge === 'hot' || p.badge === 'new').slice(0, 8);
+    if (!api) return fallback;
+    if (newQuery.isSuccess) return (newQuery.data?.items ?? []).map(productFromDto);
+    if (newQuery.isError) return fallback;
+    return [];
+  }, [api, newQuery.isSuccess, newQuery.isError, newQuery.data]);
 
   const trending = useMemo(() => {
-    if (api && featuredQuery.isSuccess && (featuredQuery.data?.items?.length ?? 0) > 0) {
-      return featuredQuery.data!.items.map(productFromDto);
-    }
-    return products.filter((p) => p.popular).slice(0, 8);
-  }, [api, featuredQuery.isSuccess, featuredQuery.data]);
+    const fallback = products.filter((p) => p.popular).slice(0, 8);
+    if (!api) return fallback;
+    if (featuredQuery.isSuccess) return (featuredQuery.data?.items ?? []).map(productFromDto);
+    if (featuredQuery.isError) return fallback;
+    return [];
+  }, [api, featuredQuery.isSuccess, featuredQuery.isError, featuredQuery.data]);
 
   const newLoading = api && newQuery.isPending;
   const trendingLoading = api && featuredQuery.isPending;
@@ -190,6 +192,14 @@ const Home = () => {
                 <Skeleton key={i} className="aspect-[3/4] w-full rounded-sm" />
               ))}
             </div>
+          ) : api && newQuery.isSuccess && newArrivals.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-600">
+              {language === 'vi'
+                ? 'Chưa có sản phẩm được đánh dấu “Hàng mới”.'
+                : language === 'en'
+                  ? 'No products marked as “New arrivals” yet.'
+                  : '신상품으로 표시된 상품이 아직 없습니다.'}
+            </div>
           ) : (
             <>
               <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
@@ -228,6 +238,14 @@ const Home = () => {
               {Array.from({ length: 8 }).map((_, i) => (
                 <Skeleton key={i} className="aspect-[3/4] w-full rounded-sm" />
               ))}
+            </div>
+          ) : api && featuredQuery.isSuccess && trending.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-600">
+              {language === 'vi'
+                ? 'Chưa có sản phẩm được đánh dấu “Nổi bật”.'
+                : language === 'en'
+                  ? 'No products marked as “Featured” yet.'
+                  : '추천(인기) 상품으로 표시된 상품이 아직 없습니다.'}
             </div>
           ) : (
             <>

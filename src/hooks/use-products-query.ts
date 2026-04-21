@@ -8,6 +8,7 @@ import {
   fetchProductById,
   fetchNewProducts,
   fetchFeaturedProducts,
+  fetchSimilarProducts,
 } from '@/services/products.service';
 import { getErrorMessage } from '@/services/http/errors';
 
@@ -55,6 +56,7 @@ export const productKeys = {
     ] as const;
   },
   detail: (id: string) => [...productKeys.all, 'detail', id] as const,
+  similar: (id: string, limit: number) => [...productKeys.all, 'similar', id, limit] as const,
 };
 
 export function useProductsQuery(options?: UseProductsQueryOptions | string) {
@@ -111,6 +113,17 @@ export function useProductDetailQuery(id: string | undefined) {
   return useQuery({
     queryKey: productKeys.detail(id ?? ''),
     queryFn: () => fetchProductById(id!),
+    enabled,
+    retry: 1,
+    meta: { getErrorMessage },
+  });
+}
+
+export function useSimilarProductsQuery(id: string | undefined, limit = 4) {
+  const enabled = Boolean(id) && isPublicApiConfigured();
+  return useQuery({
+    queryKey: productKeys.similar(id ?? '', limit),
+    queryFn: () => fetchSimilarProducts(id!, limit),
     enabled,
     retry: 1,
     meta: { getErrorMessage },

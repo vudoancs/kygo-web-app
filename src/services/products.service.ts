@@ -97,3 +97,19 @@ export async function fetchProductById(id: string): Promise<ProductDto> {
   });
   return unwrapKygoApiBody<ProductDto>(raw);
 }
+
+export async function fetchSimilarProducts(
+  id: string,
+  limit = 4,
+): Promise<ProductListResponseDto> {
+  const sp = new URLSearchParams();
+  if (limit != null) sp.set('limit', String(limit));
+  const q = sp.toString();
+  const raw = await httpRequestOrThrow<unknown>(
+    `/web/products/${encodeURIComponent(id)}/similar${q ? `?${q}` : ''}`,
+    {
+      method: 'GET',
+    },
+  );
+  return unwrapKygoApiBody<ProductListResponseDto>(raw);
+}
