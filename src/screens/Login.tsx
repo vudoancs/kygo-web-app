@@ -7,18 +7,61 @@ import { getGoogleClientId } from '@/libs/env';
 import { httpRequestOrThrow } from '@/services/http/client';
 import { setTokens } from '@/modules/auth/token-storage';
 
+type GoogleTokenResponse = {
+  access_token?: string;
+  error?: string;
+};
+
+type GoogleTokenClient = {
+  requestAccessToken: (options?: { prompt?: string }) => void;
+};
+
+type GoogleOAuth2 = {
+  initTokenClient: (config: {
+    client_id: string;
+    scope: string;
+    callback: (resp: GoogleTokenResponse) => void;
+  }) => GoogleTokenClient;
+};
+
+type GoogleAccounts = {
+  oauth2: GoogleOAuth2;
+};
+
+type GoogleIdentity = {
+  accounts: GoogleAccounts;
+};
+
+type WindowWithGoogle = Window & {
+  google?: GoogleIdentity;
+};
+
+type ApiUserInfo = Record<string, unknown> & {
+  _id?: unknown;
+  id?: unknown;
+  name?: unknown;
+  fullName?: unknown;
+  email?: unknown;
+  avatar?: unknown;
+};
+
+type LoginGoogleResponse = {
+  accessToken: string;
+  userInfo?: ApiUserInfo;
+  user?: ApiUserInfo;
+};
+
 const Login = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAppContext();
   const redirect = searchParams?.get('redirect') || '/';
   const [googleLoading, setGoogleLoading] = useState(false);
-  const tokenClientRef = useRef<any>(null);
+  const tokenClientRef = useRef<GoogleTokenClient | null>(null);
 
   const loadGoogleScript = async () => {
     if (typeof window === 'undefined') return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w: any = window as any;
+    const w = window as WindowWithGoogle;
     if (w.google?.accounts?.oauth2) return;
 
     await new Promise<void>((resolve, reject) => {
@@ -50,8 +93,7 @@ const Login = () => {
     try {
       await loadGoogleScript();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const w: any = window as any;
+      const w = window as WindowWithGoogle;
       const google = w.google;
       if (!google?.accounts?.oauth2) {
         throw new Error('Google OAuth client chưa sẵn sàng');
@@ -61,17 +103,13 @@ const Login = () => {
         tokenClientRef.current = google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: 'openid email profile',
-          callback: async (resp: { access_token?: string; error?: string }) => {
+          callback: async (resp: GoogleTokenResponse) => {
             try {
               if (!resp?.access_token) {
                 throw new Error(resp?.error || 'Không lấy được Google access_token');
               }
 
-              const result = await httpRequestOrThrow<{
-                accessToken: string;
-                userInfo?: any;
-                user?: any;
-              }>('/auth/login-google', {
+              const result = await httpRequestOrThrow<LoginGoogleResponse>('/auth/login-google', {
                 method: 'POST',
                 body: { access_token: resp.access_token },
               });

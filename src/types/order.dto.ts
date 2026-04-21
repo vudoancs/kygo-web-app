@@ -10,6 +10,7 @@ export interface OrderLineDto {
 export interface OrderDto {
   id: string;
   orderNumber: string;
+  rawStatus?: string;
   status: OrderStatus;
   paymentStatus?: string;
   lines: OrderLineDto[];

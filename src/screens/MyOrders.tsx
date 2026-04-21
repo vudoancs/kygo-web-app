@@ -8,10 +8,13 @@ import { useMyOrdersQuery } from '@/hooks/use-orders-query';
 import { isPublicApiConfigured } from '@/libs/env';
 import type { OrderDto, OrderStatus } from '@/types/order.dto';
 
+type OrderTabId = 'all' | 'waiting_receive' | 'waiting_return' | 'waiting_refund' | 'completed' | 'cancelled';
+
 const MyOrders = () => {
   const { user } = useAppContext();
   const router = useRouter();
   const [, setSelectedOrder] = useState<OrderDto | null>(null);
+  const [activeTab, setActiveTab] = useState<OrderTabId>('all');
 
   const myOrdersQuery = useMyOrdersQuery();
 
@@ -19,6 +22,49 @@ const MyOrders = () => {
     if (!isPublicApiConfigured()) return [];
     return myOrdersQuery.data ?? [];
   }, [myOrdersQuery.data]);
+
+  const filteredOrders = useMemo((): OrderDto[] => {
+    if (activeTab === 'all') return orders;
+    const raw = (o: OrderDto) => String(o.rawStatus || '').toUpperCase();
+
+    if (activeTab === 'waiting_receive') {
+      return orders.filter((o) => ['PENDING_CONFIRM', 'CONFIRMED', 'WAITING_DELIVERY'].includes(raw(o)));
+    }
+    if (activeTab === 'waiting_return') {
+      return orders.filter((o) => raw(o) === 'DELIVERED');
+    }
+    if (activeTab === 'waiting_refund') {
+      return orders.filter((o) => raw(o) === 'WAITING_REFUND');
+    }
+    if (activeTab === 'completed') {
+      return orders.filter((o) => raw(o) === 'COMPLETED' || o.status === 'completed');
+    }
+    if (activeTab === 'cancelled') {
+      return orders.filter((o) => raw(o) === 'CANCELLED' || o.status === 'cancelled');
+    }
+    return orders;
+  }, [activeTab, orders]);
+
+  const tabItems = useMemo(() => {
+    const raw = (o: OrderDto) => String(o.rawStatus || '').toUpperCase();
+    const counts = {
+      all: orders.length,
+      waiting_receive: orders.filter((o) => ['PENDING_CONFIRM', 'CONFIRMED', 'WAITING_DELIVERY'].includes(raw(o))).length,
+      waiting_return: orders.filter((o) => raw(o) === 'DELIVERED').length,
+      waiting_refund: orders.filter((o) => raw(o) === 'WAITING_REFUND').length,
+      completed: orders.filter((o) => raw(o) === 'COMPLETED' || o.status === 'completed').length,
+      cancelled: orders.filter((o) => raw(o) === 'CANCELLED' || o.status === 'cancelled').length,
+    };
+
+    return [
+      { id: 'all' as const, label: 'Tất cả', count: counts.all },
+      { id: 'waiting_receive' as const, label: 'Chờ nhận hàng', count: counts.waiting_receive },
+      { id: 'waiting_return' as const, label: 'Chờ trả hàng', count: counts.waiting_return },
+      { id: 'waiting_refund' as const, label: 'Chờ hoàn cọc', count: counts.waiting_refund },
+      { id: 'completed' as const, label: 'Hoàn thành', count: counts.completed },
+      { id: 'cancelled' as const, label: 'Hủy', count: counts.cancelled },
+    ];
+  }, [orders]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -114,8 +160,47 @@ const MyOrders = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6">
-          {orders.map((order) => (
+        <>
+          <div className="mb-6 border-b border-gray-200">
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {tabItems.map((tab) => {
+                const isActive = tab.id === activeTab;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-rose-100 text-[#b8465f]'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {tab.label}
+                    <span
+                      className={`ml-2 inline-flex min-w-6 justify-center rounded-full px-2 py-0.5 text-xs ${
+                        isActive ? 'bg-white/70 text-[#b8465f]' : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {filteredOrders.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-10 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                <Package className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-700 font-semibold">Không có đơn hàng nào trong mục này</p>
+              <p className="text-sm text-gray-600 mt-1">Bạn có thể chọn tab khác để xem thêm.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {filteredOrders.map((order) => (
             <div
               key={order.id}
               className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
@@ -202,8 +287,10 @@ const MyOrders = () => {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
