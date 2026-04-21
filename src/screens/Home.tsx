@@ -14,15 +14,27 @@ import ProductCard from '../components/ProductCard';
 import ProductCardMobile from '../components/ProductCardMobile';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNewProductsQuery, useFeaturedProductsQuery } from '@/hooks/use-products-query';
+import { useCmsPostsQuery } from '@/hooks/use-cms-posts-query';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CMS_CATEGORY_CODES, getCmsCategoryPublicHref } from '@/config/cms-seo';
 
 const Home = () => {
   const { language, t } = useLanguage();
   const api = isPublicApiConfigured();
   const newQuery = useNewProductsQuery({ page: 1, pageSize: 8 });
   const featuredQuery = useFeaturedProductsQuery({ page: 1, pageSize: 8 });
+  const beautyPostsQuery = useCmsPostsQuery({
+    categoryCode: CMS_CATEGORY_CODES.BEAUTY_TIPS,
+    limit: 4,
+    enabled: api,
+  });
+  const eventsPostsQuery = useCmsPostsQuery({
+    categoryCode: CMS_CATEGORY_CODES.EVENTS_HOA_KHOI,
+    limit: 4,
+    enabled: api,
+  });
 
   const localizedOccasions = getLocalizedOccasions(language);
   const localizedStyles = getLocalizedStyles(language);
@@ -45,6 +57,17 @@ const Home = () => {
 
   const newLoading = api && newQuery.isPending;
   const trendingLoading = api && featuredQuery.isPending;
+
+  const beautyHref = getCmsCategoryPublicHref(CMS_CATEGORY_CODES.BEAUTY_TIPS);
+  const eventsCmsHref = getCmsCategoryPublicHref(CMS_CATEGORY_CODES.EVENTS_HOA_KHOI);
+  const beautyItems = beautyPostsQuery.data?.items ?? [];
+  const eventsCmsItems = eventsPostsQuery.data?.items ?? [];
+  const cmsSectionVisible =
+    api &&
+    (beautyPostsQuery.isPending ||
+      eventsPostsQuery.isPending ||
+      beautyItems.length > 0 ||
+      eventsCmsItems.length > 0);
 
   return (
     <div className="min-h-screen">
@@ -265,6 +288,190 @@ const Home = () => {
           )}
         </div>
       </section>
+
+      {cmsSectionVisible ? (
+        <section className="border-t border-gray-100 bg-white py-12 lg:py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            {(beautyPostsQuery.isPending || beautyItems.length > 0) && (
+              <div className="mb-14">
+                <div className="mb-6 flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-900 lg:text-3xl">
+                    {language === 'vi'
+                      ? 'Bí quyết mặc đẹp'
+                      : language === 'en'
+                        ? 'Style tips'
+                        : '스타일 팁'}
+                  </h2>
+                  <Link
+                    href={beautyHref}
+                    className="flex items-center gap-1 text-sm text-[#b8465f] hover:underline"
+                  >
+                    {t('common.viewAll')} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+                {beautyPostsQuery.isPending ? (
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} className="aspect-[4/3] w-full rounded-lg" />
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="hidden gap-6 lg:grid lg:grid-cols-4">
+                      {beautyItems.map((post) => (
+                        <Link
+                          key={post.id}
+                          href={`/post/${encodeURIComponent(post.slug)}`}
+                          className="group overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm transition hover:shadow-md"
+                        >
+                          <div className="aspect-[4/3] bg-gray-100">
+                            {post.thumbnail ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={post.thumbnail}
+                                alt=""
+                                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-xs text-gray-400">
+                                Kygo
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <div className="line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-[#b8465f]">
+                              {post.title}
+                            </div>
+                            {post.excerpt ? (
+                              <p className="mt-1 line-clamp-2 text-xs text-gray-600">{post.excerpt}</p>
+                            ) : null}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto pb-2 lg:hidden -mx-4 px-4">
+                      {beautyItems.map((post) => (
+                        <Link
+                          key={post.id}
+                          href={`/post/${encodeURIComponent(post.slug)}`}
+                          className="group w-[200px] flex-shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm"
+                        >
+                          <div className="aspect-[4/3] bg-gray-100">
+                            {post.thumbnail ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={post.thumbnail}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-xs text-gray-400">
+                                Kygo
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <div className="line-clamp-2 text-sm font-semibold text-gray-900">{post.title}</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {(eventsPostsQuery.isPending || eventsCmsItems.length > 0) && (
+              <div>
+                <div className="mb-6 flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-900 lg:text-3xl">
+                    {language === 'vi'
+                      ? 'Sự kiện & Hoa khôi'
+                      : language === 'en'
+                        ? 'Events & beauty queens'
+                        : '이벤트 & 미인'}
+                  </h2>
+                  <Link
+                    href={eventsCmsHref}
+                    className="flex items-center gap-1 text-sm text-[#b8465f] hover:underline"
+                  >
+                    {t('common.viewAll')} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+                {eventsPostsQuery.isPending ? (
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} className="aspect-[4/5] w-full rounded-lg" />
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="hidden gap-6 lg:grid lg:grid-cols-4">
+                      {eventsCmsItems.map((post) => (
+                        <Link
+                          key={post.id}
+                          href={`/post/${encodeURIComponent(post.slug)}`}
+                          className="group overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm transition hover:shadow-md"
+                        >
+                          <div className="aspect-[4/5] bg-gray-100">
+                            {post.thumbnail ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={post.thumbnail}
+                                alt=""
+                                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-xs text-gray-400">
+                                Kygo
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <div className="line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-[#b8465f]">
+                              {post.title}
+                            </div>
+                            {post.excerpt ? (
+                              <p className="mt-1 line-clamp-2 text-xs text-gray-600">{post.excerpt}</p>
+                            ) : null}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto pb-2 lg:hidden -mx-4 px-4">
+                      {eventsCmsItems.map((post) => (
+                        <Link
+                          key={post.id}
+                          href={`/post/${encodeURIComponent(post.slug)}`}
+                          className="group w-[200px] flex-shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm"
+                        >
+                          <div className="aspect-[4/5] bg-gray-100">
+                            {post.thumbnail ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={post.thumbnail}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-xs text-gray-400">
+                                Kygo
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <div className="line-clamp-2 text-sm font-semibold text-gray-900">{post.title}</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">

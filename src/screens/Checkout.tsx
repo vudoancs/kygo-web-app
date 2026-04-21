@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreditCard, Wallet, Building2, MapPin, User as UserIcon } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
+import { checkoutWeb } from '@/services/orders.service';
+import { getErrorMessage } from '@/services/http/errors';
+import { isPublicApiConfigured } from '@/libs/env';
 
 const Checkout = () => {
   const { cart, user, clearCart } = useAppContext();
@@ -20,6 +23,7 @@ const Checkout = () => {
     district: '',
     notes: '',
   });
+  const [submitting, setSubmitting] = useState(false);
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -54,7 +58,7 @@ const Checkout = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!user) {
@@ -62,10 +66,37 @@ const Checkout = () => {
       return;
     }
 
-    // In a real app, this would submit to an API
-    alert('Đặt hàng thành công! Cảm ơn bạn đã tin tưởng Kygo Prom.');
-    clearCart();
-    router.push('/my-orders');
+    if (!isPublicApiConfigured()) {
+      alert('Chưa cấu hình API (NEXT_PUBLIC_API_URL). Không thể gửi đơn lên máy chủ.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await checkoutWeb({
+        items: cart.map((item) => ({
+          productId: item.productId,
+          quantity: 1,
+          type: item.type,
+          ...(item.type === 'rent' && item.rentStartDate && item.rentDuration
+            ? { rentStartDate: item.rentStartDate, rentDuration: item.rentDuration }
+            : {}),
+        })),
+        notes: formData.notes || undefined,
+        deliveryMethod,
+        phone: formData.phone || undefined,
+        address: formData.address || undefined,
+        city: formData.city || undefined,
+        district: formData.district || undefined,
+      });
+      alert('Đặt hàng thành công! Cảm ơn bạn đã tin tưởng Kygo Prom.');
+      clearCart();
+      router.push('/my-orders');
+    } catch (err) {
+      alert(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!user) {
@@ -346,9 +377,10 @@ const Checkout = () => {
 
               <button
                 type="submit"
-                className="w-full bg-[#b8465f] hover:bg-[#9d3a50] text-white py-3 px-6 rounded-lg font-semibold transition-colors"
+                disabled={submitting}
+                className="w-full bg-[#b8465f] hover:bg-[#9d3a50] disabled:opacity-60 text-white py-3 px-6 rounded-lg font-semibold transition-colors"
               >
-                Đặt hàng
+                {submitting ? 'Đang gửi…' : 'Đặt hàng'}
               </button>
             </div>
           </div>

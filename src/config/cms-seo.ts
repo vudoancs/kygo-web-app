@@ -14,3 +14,14 @@ export const CMS_CATEGORY_PATH_TO_CODE: Record<string, string> = Object.fromEntr
 export function getCmsCategoryPath(code: string): string | undefined {
   return CMS_CATEGORY_CODE_TO_PATH[code];
 }
+
+/** Đường dẫn hiển thị (SEO) hoặc `/category/{code}` nếu chưa map. */
+export function getCmsCategoryPublicHref(code: string): string {
+  const p = getCmsCategoryPath(code);
+  return p ? `/${p}` : `/category/${encodeURIComponent(code)}`;
+}
+
+export const CMS_CATEGORY_CODES = {
+  BEAUTY_TIPS: 'BEAUTY_TIPS',
+  EVENTS_HOA_KHOI: 'EVENTS_HOA_KHOI',
+} as const;
