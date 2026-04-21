@@ -87,7 +87,7 @@ const OrderDetail = () => {
             <h1 className="font-serif text-2xl font-bold text-gray-900">Chi tiết đơn hàng</h1>
             <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
               <span>
-                Mã đơn: <span className="font-semibold text-gray-900">{orderQuery.data.id}</span>
+                Mã đơn: <span className="font-semibold text-gray-900">{orderQuery.data.orderNumber}</span>
               </span>
               <span>
                 Trạng thái: <span className="font-semibold text-gray-900">{orderQuery.data.status}</span>
@@ -102,6 +102,29 @@ const OrderDetail = () => {
           </div>
 
           <div className="p-6">
+            {orderQuery.data.rentalStartDate && orderQuery.data.rentalEndDate ? (
+              <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                <div className="flex flex-wrap gap-x-6 gap-y-1">
+                  <span>
+                    Thời gian thuê:{' '}
+                    <span className="font-semibold text-gray-900">
+                      {new Date(orderQuery.data.rentalStartDate).toLocaleDateString('vi-VN')} -{' '}
+                      {new Date(orderQuery.data.rentalEndDate).toLocaleDateString('vi-VN')}
+                    </span>
+                  </span>
+                  {orderQuery.data.venue ? (
+                    <span>
+                      Địa điểm: <span className="font-semibold text-gray-900">{orderQuery.data.venue}</span>
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            ) : orderQuery.data.venue ? (
+              <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                Địa điểm: <span className="font-semibold text-gray-900">{orderQuery.data.venue}</span>
+              </div>
+            ) : null}
+
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Sản phẩm</h2>
             <div className="space-y-4">
               {orderQuery.data.lines.map((line) => (

@@ -9,8 +9,15 @@ export interface OrderLineDto {
 
 export interface OrderDto {
   id: string;
+  orderNumber: string;
   status: OrderStatus;
+  paymentStatus?: string;
   lines: OrderLineDto[];
+  subtotal?: number;
+  totalDeposit?: number;
   total: number;
   createdAt: string;
+  rentalStartDate?: string;
+  rentalEndDate?: string;
+  venue?: string;
 }

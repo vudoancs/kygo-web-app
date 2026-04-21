@@ -125,7 +125,7 @@ const MyOrders = () => {
                 <div className="flex items-center gap-6">
                   <div>
                     <p className="text-sm text-gray-600">Mã đơn hàng</p>
-                    <p className="font-semibold text-gray-900">{order.id}</p>
+                    <p className="font-semibold text-gray-900">{order.orderNumber}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Ngày đặt</p>
@@ -193,7 +193,7 @@ const MyOrders = () => {
                   <button
                     onClick={() => {
                       setSelectedOrder(order);
-                      router.push(`/my-orders/${order.id}`);
+                      router.push(`/my-orders/${order.orderNumber}`);
                     }}
                     className="flex-1 border border-[#b8465f] text-[#b8465f] py-2 px-4 rounded-lg hover:bg-rose-50 transition-colors font-medium flex items-center justify-center gap-2"
                   >
