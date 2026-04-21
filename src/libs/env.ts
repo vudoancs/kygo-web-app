@@ -26,6 +26,10 @@ export function getAppUrl(): string {
   );
 }
 
+export function getGoogleClientId(): string {
+  return process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '';
+}
+
 /** Dùng khi bắt buộc phải có base URL (ví dụ build CI). */
 export function requirePublicApiUrl(): string {
   return required('NEXT_PUBLIC_API_URL', process.env.NEXT_PUBLIC_API_URL);

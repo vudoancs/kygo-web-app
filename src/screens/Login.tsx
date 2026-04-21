@@ -1,26 +1,112 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/modules/app-state';
+import { getGoogleClientId } from '@/libs/env';
+import { httpRequestOrThrow } from '@/services/http/client';
+import { setTokens } from '@/modules/auth/token-storage';
 
 const Login = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAppContext();
   const redirect = searchParams?.get('redirect') || '/';
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const tokenClientRef = useRef<any>(null);
 
-  const handleGoogleLogin = () => {
-    // Simulate Google login
-    const mockUser = {
-      id: '1',
-      name: 'Nguyễn Thị Hương',
-      email: 'huong.nguyen@example.com',
-      avatar: 'https://i.pravatar.cc/150?img=1',
-    };
+  const loadGoogleScript = async () => {
+    if (typeof window === 'undefined') return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w: any = window as any;
+    if (w.google?.accounts?.oauth2) return;
 
-    login(mockUser);
-    router.push(redirect);
+    await new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector('script[data-google-gsi="true"]') as HTMLScriptElement | null;
+      if (existing) {
+        existing.addEventListener('load', () => resolve());
+        existing.addEventListener('error', () => reject(new Error('Failed to load Google script')));
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.dataset.googleGsi = 'true';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Google script'));
+      document.head.appendChild(script);
+    });
+  };
+
+  const handleGoogleLogin = async () => {
+    const clientId = getGoogleClientId();
+    if (!clientId) {
+      alert('Thiếu cấu hình NEXT_PUBLIC_GOOGLE_CLIENT_ID');
+      return;
+    }
+
+    setGoogleLoading(true);
+    try {
+      await loadGoogleScript();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const w: any = window as any;
+      const google = w.google;
+      if (!google?.accounts?.oauth2) {
+        throw new Error('Google OAuth client chưa sẵn sàng');
+      }
+
+      if (!tokenClientRef.current) {
+        tokenClientRef.current = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid email profile',
+          callback: async (resp: { access_token?: string; error?: string }) => {
+            try {
+              if (!resp?.access_token) {
+                throw new Error(resp?.error || 'Không lấy được Google access_token');
+              }
+
+              const result = await httpRequestOrThrow<{
+                accessToken: string;
+                userInfo?: any;
+                user?: any;
+              }>('/auth/login-google', {
+                method: 'POST',
+                body: { access_token: resp.access_token },
+              });
+
+              if (!result?.accessToken) {
+                throw new Error('Thiếu accessToken từ API');
+              }
+
+              // Lưu JWT để gọi API (My Orders, checkout...)
+              setTokens(result.accessToken);
+
+              const info = result.userInfo ?? result.user ?? {};
+              const appUser = {
+                id: String(info._id ?? info.id ?? ''),
+                name: String(info.name ?? info.fullName ?? info.email ?? 'User'),
+                email: String(info.email ?? ''),
+                avatar: typeof info.avatar === 'string' ? info.avatar : undefined,
+              };
+
+              login(appUser);
+              router.push(redirect);
+            } catch (e) {
+              alert(e instanceof Error ? e.message : 'Đăng nhập Google thất bại');
+            } finally {
+              setGoogleLoading(false);
+            }
+          },
+        });
+      }
+
+      tokenClientRef.current.requestAccessToken({ prompt: 'consent' });
+    } catch (e) {
+      setGoogleLoading(false);
+      alert(e instanceof Error ? e.message : 'Đăng nhập Google thất bại');
+    }
   };
 
   return (
@@ -35,8 +121,10 @@ const Login = () => {
 
           {/* Google Login Button */}
           <button
+            type="button"
             onClick={handleGoogleLogin}
-            className="w-full bg-white border-2 border-gray-300 hover:border-[#b8465f] text-gray-700 py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-3 mb-4"
+            disabled={googleLoading}
+            className="w-full bg-white border-2 border-gray-300 hover:border-[#b8465f] text-gray-700 py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-3 mb-4 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -56,7 +144,7 @@ const Login = () => {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Đăng nhập với Google
+            {googleLoading ? 'Đang đăng nhập...' : 'Đăng nhập với Google'}
           </button>
 
           {/* Divider */}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export interface CartItem {
   id: string;
@@ -36,9 +36,48 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const USER_KEY = 'kygo_user';
+
+function safeReadUser(): AppUser | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = sessionStorage.getItem(USER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return null;
+    const p = parsed as Record<string, unknown>;
+    if (typeof p.id !== 'string' || typeof p.name !== 'string' || typeof p.email !== 'string') return null;
+    return {
+      id: p.id,
+      name: p.name,
+      email: p.email,
+      avatar: typeof p.avatar === 'string' ? p.avatar : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function safeWriteUser(user: AppUser | null) {
+  try {
+    if (typeof window === 'undefined') return;
+    if (!user) {
+      sessionStorage.removeItem(USER_KEY);
+      return;
+    }
+    sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+  } catch {
+    // ignore
+  }
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [user, setUser] = useState<AppUser | null>(null);
+
+  useEffect(() => {
+    setUser(safeReadUser());
+  }, []);
 
   const addToCart = (item: CartItem) => {
     setCart((prev) => [...prev, item]);
@@ -60,10 +99,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const login = (userData: AppUser) => {
     setUser(userData);
+    safeWriteUser(userData);
   };
 
   const logout = () => {
     setUser(null);
+    safeWriteUser(null);
   };
 
   return (

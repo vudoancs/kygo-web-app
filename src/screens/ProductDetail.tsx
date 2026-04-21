@@ -17,11 +17,35 @@ import { useSimilarProductsQuery } from '@/hooks/use-products-query';
 import ProductCard from '../components/ProductCard';
 import ProductCardMobile from '../components/ProductCardMobile';
 
+const FAVORITE_STORAGE_KEY = 'kygo:favorites:productIds';
+
+function safeReadFavoriteIds(): string[] {
+  try {
+    if (typeof window === 'undefined') return [];
+    const raw = window.localStorage.getItem(FAVORITE_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((x) => typeof x === 'string');
+  } catch {
+    return [];
+  }
+}
+
+function safeWriteFavoriteIds(ids: string[]) {
+  try {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(FAVORITE_STORAGE_KEY, JSON.stringify(ids));
+  } catch {
+    // ignore
+  }
+}
+
 const ProductDetail = () => {
   const params = useParams();
   const id = (params?.id as string) ?? '';
   const router = useRouter();
-  const { addToCart } = useAppContext();
+  const { addToCart, user } = useAppContext();
   const { language, t } = useLanguage();
 
   const mockProduct = useMemo(() => products.find((p) => p.id === id), [id]);
@@ -77,6 +101,13 @@ const ProductDetail = () => {
   const [rentDurationInput, setRentDurationInput] = useState('');
   const [actionType, setActionType] = useState<'rent' | 'buy'>('rent');
   const [activeTab, setActiveTab] = useState<'info' | 'reviews'>('info');
+  const [isLiked, setIsLiked] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    const favorites = safeReadFavoriteIds();
+    setIsLiked(favorites.includes(id));
+  }, [id]);
 
   const addDays = (date: Date, days: number) => {
     const d = new Date(date);
@@ -219,6 +250,43 @@ const ProductDetail = () => {
     setCurrentImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
   };
 
+  const handleToggleLike = () => {
+    if (!id) return;
+    const favorites = safeReadFavoriteIds();
+    const next = favorites.includes(id) ? favorites.filter((x) => x !== id) : [...favorites, id];
+    safeWriteFavoriteIds(next);
+    setIsLiked(next.includes(id));
+
+    if (!user) {
+      // Chưa đăng nhập: yêu cầu chỉ lưu ở trình duyệt.
+      return;
+    }
+    // Nếu sau này có API wishlist/favorite, có thể sync ở đây.
+  };
+
+  const handleShare = async () => {
+    try {
+      const url = typeof window !== 'undefined' ? window.location.href : '';
+      if (!url) return;
+
+      // Ưu tiên native share (mobile).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const nav: any = typeof navigator !== 'undefined' ? navigator : undefined;
+      if (nav?.share) {
+        await nav.share({ title: product.name, url });
+        return;
+      }
+      if (nav?.clipboard?.writeText) {
+        await nav.clipboard.writeText(url);
+        alert(language === 'vi' ? 'Đã sao chép liên kết.' : language === 'en' ? 'Link copied.' : '링크가 복사되었습니다.');
+        return;
+      }
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer');
+    } catch {
+      alert(language === 'vi' ? 'Không thể chia sẻ liên kết.' : language === 'en' ? 'Unable to share.' : '공유할 수 없습니다.');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Breadcrumb */}
@@ -298,10 +366,24 @@ const ProductDetail = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="w-10 h-10 border border-gray-300 rounded-full flex items-center justify-center hover:border-[#b8465f] hover:text-[#b8465f] transition-colors">
-                <Heart className="w-5 h-5" />
+              <button
+                type="button"
+                onClick={handleToggleLike}
+                aria-label={language === 'vi' ? 'Thích' : language === 'en' ? 'Like' : '좋아요'}
+                className={`w-10 h-10 border rounded-full flex items-center justify-center transition-colors ${
+                  isLiked
+                    ? 'border-[#b8465f] text-[#b8465f] bg-rose-50'
+                    : 'border-gray-300 hover:border-[#b8465f] hover:text-[#b8465f]'
+                }`}
+              >
+                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
               </button>
-              <button className="w-10 h-10 border border-gray-300 rounded-full flex items-center justify-center hover:border-[#b8465f] hover:text-[#b8465f] transition-colors">
+              <button
+                type="button"
+                onClick={handleShare}
+                aria-label={language === 'vi' ? 'Chia sẻ' : language === 'en' ? 'Share' : '공유'}
+                className="w-10 h-10 border border-gray-300 rounded-full flex items-center justify-center hover:border-[#b8465f] hover:text-[#b8465f] transition-colors"
+              >
                 <Share2 className="w-5 h-5" />
               </button>
             </div>
