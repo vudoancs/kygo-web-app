@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { SlidersHorizontal, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { products } from '../data/products';
 import ProductCard from '../components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useProductsQuery } from '@/hooks/use-products-query';
 import { useWebCategoriesQuery } from '@/hooks/use-web-categories-query';
 import { flattenCategoryTreeForFilter } from '@/libs/web-category-tree';
@@ -36,22 +38,13 @@ const ProductListing = () => {
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [colorQuery, setColorQuery] = useState('');
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [priceRange] = useState<[number, number]>([0, 15000000]);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = PRODUCTS_PER_PAGE;
-
-  const colorFilters = useMemo(() => {
-    if (!colorQuery.trim()) return undefined;
-    const parts = colorQuery
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return parts.length ? parts : undefined;
-  }, [colorQuery]);
 
   const listQueryArgs = useMemo(
     () => ({
@@ -61,7 +54,7 @@ const ProductListing = () => {
       occasion: selectedOccasions.length ? [...selectedOccasions] : undefined,
       style: selectedStyles.length ? [...selectedStyles] : undefined,
       size: selectedSizes.length ? [...selectedSizes] : undefined,
-      color: colorFilters,
+      color: selectedColors.length ? [...selectedColors] : undefined,
       minPrice: priceRange[0],
       maxPrice: priceRange[1],
       search: searchQuery.trim() || undefined,
@@ -76,7 +69,7 @@ const ProductListing = () => {
       selectedOccasions,
       selectedStyles,
       selectedSizes,
-      colorFilters,
+      selectedColors,
       priceRange,
       searchQuery,
       filterType,
@@ -88,8 +81,10 @@ const ProductListing = () => {
   useEffect(() => {
     const occ = searchParams.getAll('occasion');
     const sty = searchParams.getAll('style');
+    const col = searchParams.getAll('color');
     setSelectedOccasions(occ);
     setSelectedStyles(sty);
+    setSelectedColors(col);
   }, [searchParams]);
 
   useEffect(() => {
@@ -99,7 +94,7 @@ const ProductListing = () => {
     selectedOccasions.join(','),
     selectedStyles.join(','),
     selectedSizes.join(','),
-    colorQuery,
+    selectedColors.join(','),
     priceRange[0],
     priceRange[1],
     searchQuery,
@@ -130,6 +125,25 @@ const ProductListing = () => {
     productsQuery.isPending,
     productsQuery.isSuccess,
   ]);
+
+  const colorOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of baseProducts) {
+      for (const c of p.colors || []) {
+        const s = String(c || '').trim();
+        if (s) set.add(s);
+      }
+    }
+    for (const c of selectedColors) {
+      const s = String(c || '').trim();
+      if (s) set.add(s);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [baseProducts, selectedColors]);
+
+  const toggleColor = (c: string) => {
+    setSelectedColors((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+  };
 
   /** Đang dùng kết quả lọc từ API — bỏ lọc trùng trên client (chỉ còn sort cục bộ). */
   const serverFiltersActive =
@@ -233,6 +247,10 @@ const ProductListing = () => {
         filtered = filtered.filter(p => p.sizes.some(size => selectedSizes.includes(size)));
       }
 
+      if (selectedColors.length > 0) {
+        filtered = filtered.filter((p) => p.colors.some((c) => selectedColors.includes(c)));
+      }
+
       filtered = filtered.filter(
         p => p.buyPrice >= priceRange[0] && p.buyPrice <= priceRange[1],
       );
@@ -270,6 +288,7 @@ const ProductListing = () => {
     category,
     serverFiltersActive,
     selectedSizes,
+    selectedColors,
     priceRange,
     sortBy,
     startDate,
@@ -278,6 +297,11 @@ const ProductListing = () => {
   ]);
 
   const totalFromApi = productsQuery.data?.total;
+  /** Số lượng hiển thị ở dòng “Hiển thị N sản phẩm” — dùng `total` từ API khi có, không dùng độ dài trang hiện tại. */
+  const listResultCount =
+    isApi && productsQuery.isSuccess && productsQuery.data && typeof productsQuery.data.total === 'number'
+      ? productsQuery.data.total
+      : filteredProducts.length;
   /** Chỉ khi API có `total > 0` — tránh coi mock fallback (total 0) là phân trang server. */
   const useServerPagination =
     isApi &&
@@ -411,13 +435,55 @@ const ProductListing = () => {
       {/* Màu */}
       <div className="border-t border-gray-200 pt-6">
         <h3 className="font-semibold text-gray-900 mb-3">{t('filter.color')}</h3>
-        <input
-          type="text"
-          value={colorQuery}
-          onChange={(e) => setColorQuery(e.target.value)}
-          placeholder={t('filter.colorPlaceholder')}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-[#b8465f] focus:outline-none focus:ring-1 focus:ring-[#b8465f]"
-        />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto w-full justify-between border-gray-300 py-2.5 text-left text-sm text-gray-800 hover:border-[#b8465f] hover:text-[#b8465f]"
+            >
+              <span className="truncate">
+                {selectedColors.length ? `Đã chọn: ${selectedColors.join(', ')}` : 'Chọn màu sắc'}
+              </span>
+              <span
+                className={`ml-3 inline-flex min-w-7 items-center justify-center rounded-full px-2 py-0.5 text-xs ${
+                  selectedColors.length ? 'bg-rose-100 text-[#b8465f]' : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {selectedColors.length}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-0" align="start">
+            <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 py-2">
+              <p className="text-xs font-medium text-gray-600">Chọn một hoặc nhiều màu</p>
+              <button
+                type="button"
+                className="text-xs font-medium text-[#b8465f] hover:underline"
+                onClick={() => setSelectedColors([])}
+              >
+                Xóa
+              </button>
+            </div>
+            <div className="max-h-64 space-y-2 overflow-y-auto p-3">
+              {colorOptions.length ? (
+                colorOptions.map((c) => (
+                  <label key={c} className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-rose-50">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-[#b8465f] focus:ring-[#b8465f]"
+                      checked={selectedColors.includes(c)}
+                      onChange={() => toggleColor(c)}
+                    />
+                    <span className="text-sm text-gray-800">{c}</span>
+                  </label>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">Chưa có dữ liệu màu để lọc.</p>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Size */}
@@ -618,7 +684,8 @@ const ProductListing = () => {
 
           {/* Product Count */}
           <div className="text-sm text-gray-600 mb-6">
-            {t('listing.showingProducts')} <span className="font-semibold text-gray-900">{filteredProducts.length}</span> {t('listing.products')}
+            {t('listing.showingProducts')}{' '}
+            <span className="font-semibold text-gray-900">{listResultCount}</span> {t('listing.products')}
           </div>
 
           {/* Mobile Filter Panel */}

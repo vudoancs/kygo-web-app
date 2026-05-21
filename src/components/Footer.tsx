@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { RENTAL_POLICY_LINKS } from '@/constants/rentalPolicy';
 
 const Footer = () => {
   const { language } = useLanguage();
@@ -63,9 +64,13 @@ const Footer = () => {
               {language === 'vi' ? 'CHÍNH SÁCH' : language === 'en' ? 'POLICIES' : '정책'}
             </h3>
             <ul className="space-y-2 text-sm text-gray-600">
-              <li><Link href="/policy/rental" className="hover:text-[#b8465f] transition-colors">
-                {language === 'vi' ? 'Chính sách thuê váy' : language === 'en' ? 'Rental Policy' : '대여 정책'}
-              </Link></li>
+              {RENTAL_POLICY_LINKS.map(({ href, label }) => (
+                <li key={href}>
+                  <Link href={href} className="hover:text-[#b8465f] transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
               <li><Link href="/policy/return" className="hover:text-[#b8465f] transition-colors">
                 {language === 'vi' ? 'Chính sách đổi trả' : language === 'en' ? 'Return Policy' : '반품 정책'}
               </Link></li>
