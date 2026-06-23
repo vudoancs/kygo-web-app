@@ -25,6 +25,9 @@ export type FetchProductsParams = {
   featured?: boolean;
   /** Chỉ sản phẩm hàng mới */
   isNew?: boolean;
+  /** Trường sắp xếp — mặc định backend: sku desc */
+  sortBy?: 'sku' | 'createdAt' | 'price' | 'featured';
+  sortOrder?: 'asc' | 'desc';
 };
 
 function appendStringArray(sp: URLSearchParams, key: string, values?: string[]): void {
@@ -53,6 +56,8 @@ function appendQuery(sp: URLSearchParams, params: FetchProductsParams): void {
   if (params.rentEnd) sp.set('rentEnd', params.rentEnd);
   if (params.featured === true) sp.set('featured', 'true');
   if (params.isNew === true) sp.set('isNew', 'true');
+  if (params.sortBy) sp.set('sortBy', params.sortBy);
+  if (params.sortOrder) sp.set('sortOrder', params.sortOrder);
 }
 
 export async function fetchProducts(params?: FetchProductsParams): Promise<ProductListResponseDto> {

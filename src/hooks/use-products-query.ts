@@ -36,6 +36,8 @@ export const productKeys = {
       listingMode,
       rentStart,
       rentEnd,
+      sortBy,
+      sortOrder,
     } = opts;
     return [
       ...productKeys.all,
@@ -53,6 +55,8 @@ export const productKeys = {
       listingMode ?? '',
       rentStart ?? '',
       rentEnd ?? '',
+      sortBy ?? '',
+      sortOrder ?? '',
     ] as const;
   },
   detail: (id: string) => [...productKeys.all, 'detail', id] as const,

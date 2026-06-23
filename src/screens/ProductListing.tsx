@@ -12,6 +12,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useProductsQuery } from '@/hooks/use-products-query';
 import { useWebCategoriesQuery } from '@/hooks/use-web-categories-query';
 import { flattenCategoryTreeForFilter, resolveProductListCategorySlugs, DRESSES_CATEGORY_ROOT_SLUG } from '@/libs/web-category-tree';
+import {
+  DEFAULT_PRODUCT_LISTING_SORT,
+  mapListingSortToApiParams,
+  type ProductListingSortKey,
+} from '@/libs/product-list-sort';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -32,7 +37,7 @@ const ProductListing = () => {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const isApi = isPublicApiConfigured();
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState<ProductListingSortKey>(DEFAULT_PRODUCT_LISTING_SORT);
   const [filterType, setFilterType] = useState<'all' | 'rent' | 'buy'>('all');
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
@@ -69,6 +74,7 @@ const ProductListing = () => {
       listingMode: filterType,
       rentStart: startDate && endDate ? startDate : undefined,
       rentEnd: startDate && endDate ? endDate : undefined,
+      ...mapListingSortToApiParams(sortBy),
     }),
     [
       apiCategorySlugs,
@@ -83,6 +89,7 @@ const ProductListing = () => {
       filterType,
       startDate,
       endDate,
+      sortBy,
     ],
   );
 
@@ -110,6 +117,7 @@ const ProductListing = () => {
     filterType,
     startDate,
     endDate,
+    sortBy,
   ]);
 
   const productsQuery = useProductsQuery(listQueryArgs);
@@ -274,20 +282,29 @@ const ProductListing = () => {
       }
     }
 
-    // Sort
-    switch (sortBy) {
-      case 'price-asc':
-        filtered.sort((a, b) => a.buyPrice - b.buyPrice);
-        break;
-      case 'price-desc':
-        filtered.sort((a, b) => b.buyPrice - a.buyPrice);
-        break;
-      case 'newest':
-        filtered.sort((a, b) => (b.badge === 'new' ? 1 : 0) - (a.badge === 'new' ? 1 : 0));
-        break;
-      case 'popular':
-        filtered.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
-        break;
+    // Sort (mock / client-only khi không phân trang server)
+    if (!serverFiltersActive) {
+      switch (sortBy) {
+        case 'code-desc':
+          filtered.sort((a, b) =>
+            String(b.productCode || b.id).localeCompare(String(a.productCode || a.id), 'vi', {
+              numeric: true,
+            }),
+          );
+          break;
+        case 'price-asc':
+          filtered.sort((a, b) => a.buyPrice - b.buyPrice);
+          break;
+        case 'price-desc':
+          filtered.sort((a, b) => b.buyPrice - a.buyPrice);
+          break;
+        case 'newest':
+          filtered.sort((a, b) => (b.badge === 'new' ? 1 : 0) - (a.badge === 'new' ? 1 : 0));
+          break;
+        case 'popular':
+          filtered.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
+          break;
+      }
     }
 
     return filtered;
@@ -645,6 +662,16 @@ const ProductListing = () => {
 
             {/* Sorting Buttons */}
             <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+              <button
+                onClick={() => setSortBy('code-desc')}
+                className={`px-4 py-2.5 rounded-md text-sm border transition-colors ${
+                  sortBy === 'code-desc'
+                    ? 'border-[#b8465f] text-[#b8465f] bg-[#b8465f]/5'
+                    : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
+                }`}
+              >
+                {t('listing.sortCodeDesc')}
+              </button>
               <button
                 onClick={() => setSortBy('newest')}
                 className={`px-4 py-2.5 rounded-md text-sm border transition-colors ${
