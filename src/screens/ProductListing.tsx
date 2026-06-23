@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useProductsQuery } from '@/hooks/use-products-query';
 import { useWebCategoriesQuery } from '@/hooks/use-web-categories-query';
-import { flattenCategoryTreeForFilter } from '@/libs/web-category-tree';
+import { flattenCategoryTreeForFilter, resolveProductListCategorySlugs, DRESSES_CATEGORY_ROOT_SLUG } from '@/libs/web-category-tree';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -46,9 +46,17 @@ const ProductListing = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = PRODUCTS_PER_PAGE;
 
+  const categoriesQuery = useWebCategoriesQuery();
+  const categoryTree = categoriesQuery.data?.tree;
+
+  const apiCategorySlugs = useMemo(
+    () => resolveProductListCategorySlugs(category, categoryTree),
+    [category, categoryTree],
+  );
+
   const listQueryArgs = useMemo(
     () => ({
-      category: category && category !== 'all' ? [category] : undefined,
+      category: apiCategorySlugs,
       page: currentPage,
       pageSize: productsPerPage,
       occasion: selectedOccasions.length ? [...selectedOccasions] : undefined,
@@ -63,7 +71,7 @@ const ProductListing = () => {
       rentEnd: startDate && endDate ? endDate : undefined,
     }),
     [
-      category,
+      apiCategorySlugs,
       currentPage,
       productsPerPage,
       selectedOccasions,
@@ -91,6 +99,7 @@ const ProductListing = () => {
     setCurrentPage(1);
   }, [
     category,
+    apiCategorySlugs?.join(','),
     selectedOccasions.join(','),
     selectedStyles.join(','),
     selectedSizes.join(','),
@@ -104,7 +113,6 @@ const ProductListing = () => {
   ]);
 
   const productsQuery = useProductsQuery(listQueryArgs);
-  const categoriesQuery = useWebCategoriesQuery();
 
   const baseProducts = useMemo(() => {
     if (!isApi) return products;
@@ -380,19 +388,26 @@ const ProductListing = () => {
       <div>
         <h3 className="font-semibold text-gray-900 mb-3">{t('filter.category')}</h3>
         <div className="space-y-2">
-          {categories.map((cat) => (
+          {categories.map((cat) => {
+            const isActive =
+              category === cat.id ||
+              (!category && cat.id === 'all') ||
+              (cat.id === 'all' &&
+                (category === 'all' || category === DRESSES_CATEGORY_ROOT_SLUG));
+            return (
             <Link
               key={cat.id}
               href={`/products/${cat.id}`}
               className={`block text-sm py-1 transition-colors ${
-                category === cat.id || (!category && cat.id === 'all')
+                isActive
                   ? 'text-[#b8465f] font-medium'
                   : 'text-gray-600 hover:text-[#b8465f]'
               }`}
             >
               {cat.label}
             </Link>
-          ))}
+            );
+          })}
         </div>
       </div>
 
