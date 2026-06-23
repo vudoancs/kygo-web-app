@@ -3,13 +3,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { SlidersHorizontal, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SlidersHorizontal, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { products } from '../data/products';
 import ProductCard from '../components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useProductsQuery } from '@/hooks/use-products-query';
+import { useProductsQuery, useWebProductBrandsQuery } from '@/hooks/use-products-query';
 import { useWebCategoriesQuery } from '@/hooks/use-web-categories-query';
 import { flattenCategoryTreeForFilter, resolveProductListCategorySlugs, DRESSES_CATEGORY_ROOT_SLUG } from '@/libs/web-category-tree';
 import {
@@ -43,6 +43,8 @@ const ProductListing = () => {
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [priceRange] = useState<[number, number]>([0, 15000000]);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -52,6 +54,7 @@ const ProductListing = () => {
   const productsPerPage = PRODUCTS_PER_PAGE;
 
   const categoriesQuery = useWebCategoriesQuery();
+  const brandsQuery = useWebProductBrandsQuery();
   const categoryTree = categoriesQuery.data?.tree;
 
   const apiCategorySlugs = useMemo(
@@ -70,7 +73,8 @@ const ProductListing = () => {
       color: selectedColors.length ? [...selectedColors] : undefined,
       minPrice: priceRange[0],
       maxPrice: priceRange[1],
-      search: searchQuery.trim() || undefined,
+      search: debouncedSearch.trim() || undefined,
+      brand: selectedBrands.length ? [...selectedBrands] : undefined,
       listingMode: filterType,
       rentStart: startDate && endDate ? startDate : undefined,
       rentEnd: startDate && endDate ? endDate : undefined,
@@ -85,7 +89,8 @@ const ProductListing = () => {
       selectedSizes,
       selectedColors,
       priceRange,
-      searchQuery,
+      debouncedSearch,
+      selectedBrands,
       filterType,
       startDate,
       endDate,
@@ -103,6 +108,11 @@ const ProductListing = () => {
   }, [searchParams]);
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
     setCurrentPage(1);
   }, [
     category,
@@ -111,9 +121,10 @@ const ProductListing = () => {
     selectedStyles.join(','),
     selectedSizes.join(','),
     selectedColors.join(','),
+    selectedBrands.join(','),
     priceRange[0],
     priceRange[1],
-    searchQuery,
+    debouncedSearch,
     filterType,
     startDate,
     endDate,
@@ -141,6 +152,22 @@ const ProductListing = () => {
     productsQuery.isPending,
     productsQuery.isSuccess,
   ]);
+
+  const brandOptions = useMemo(() => {
+    const fromApi = brandsQuery.data?.brands ?? [];
+    if (fromApi.length) return fromApi;
+    const set = new Set<string>();
+    for (const p of products) {
+      if (p.brand?.trim()) set.add(p.brand.trim());
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [brandsQuery.data?.brands]);
+
+  const toggleBrand = (brand: string) => {
+    setSelectedBrands((prev) =>
+      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand],
+    );
+  };
 
   const colorOptions = useMemo(() => {
     const set = new Set<string>();
@@ -267,12 +294,16 @@ const ProductListing = () => {
         filtered = filtered.filter((p) => p.colors.some((c) => selectedColors.includes(c)));
       }
 
+      if (selectedBrands.length > 0) {
+        filtered = filtered.filter((p) => selectedBrands.includes(p.brand));
+      }
+
       filtered = filtered.filter(
         p => p.buyPrice >= priceRange[0] && p.buyPrice <= priceRange[1],
       );
 
-      if (searchQuery.trim()) {
-        const q = searchQuery.trim().toLowerCase();
+      if (debouncedSearch.trim()) {
+        const q = debouncedSearch.trim().toLowerCase();
         filtered = filtered.filter(
           p =>
             p.name.toLowerCase().includes(q) ||
@@ -314,11 +345,12 @@ const ProductListing = () => {
     serverFiltersActive,
     selectedSizes,
     selectedColors,
+    selectedBrands,
     priceRange,
     sortBy,
     startDate,
     endDate,
-    searchQuery,
+    debouncedSearch,
   ]);
 
   const totalFromApi = productsQuery.data?.total;
@@ -401,6 +433,21 @@ const ProductListing = () => {
 
   const FilterSidebar = () => (
     <div className="space-y-6">
+      {/* Tìm kiếm */}
+      <div>
+        <h3 className="font-semibold text-gray-900 mb-3">{t('listing.search')}</h3>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('listing.searchNameOrCode')}
+            className="w-full rounded-lg border border-gray-300 py-2.5 pl-9 pr-3 text-sm text-gray-800 focus:border-[#b8465f] focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20"
+          />
+        </div>
+      </div>
+
       {/* Danh mục sản phẩm */}
       <div>
         <h3 className="font-semibold text-gray-900 mb-3">{t('filter.category')}</h3>
@@ -425,6 +472,28 @@ const ProductListing = () => {
             </Link>
             );
           })}
+        </div>
+      </div>
+
+      {/* Thương hiệu */}
+      <div className="border-t border-gray-200 pt-6">
+        <h3 className="font-semibold text-gray-900 mb-3">{t('filter.brand')}</h3>
+        <div className="max-h-48 space-y-2 overflow-y-auto">
+          {brandOptions.length ? (
+            brandOptions.map((brand) => (
+              <label key={brand} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedBrands.includes(brand)}
+                  onChange={() => toggleBrand(brand)}
+                  className="rounded border-gray-300 text-[#b8465f] focus:ring-[#b8465f]"
+                />
+                <span className="text-sm text-gray-600">{brand}</span>
+              </label>
+            ))
+          ) : (
+            <p className="text-sm text-gray-500">{t('listing.noBrands')}</p>
+          )}
         </div>
       </div>
 
@@ -648,16 +717,6 @@ const ProductListing = () => {
                   }}
                 />
               </div>
-            </div>
-
-            <div className="w-full sm:flex-1 sm:max-w-md flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-4 py-3">
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('listing.searchNameOrCode')}
-                className="text-sm text-gray-700 focus:outline-none border-none w-full bg-transparent"
-              />
             </div>
 
             {/* Sorting Buttons */}

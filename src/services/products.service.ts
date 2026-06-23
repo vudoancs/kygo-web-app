@@ -18,6 +18,8 @@ export type FetchProductsParams = {
   maxPrice?: number;
   /** Tên / SKU / mã váy */
   search?: string;
+  /** Thương hiệu (OR) */
+  brand?: string[];
   listingMode?: 'all' | 'rent' | 'buy';
   rentStart?: string;
   rentEnd?: string;
@@ -42,6 +44,7 @@ function appendQuery(sp: URLSearchParams, params: FetchProductsParams): void {
   if (params.page != null && params.page >= 1) sp.set('page', String(params.page));
   sp.set('pageSize', String(params.pageSize ?? DEFAULT_PAGE_SIZE));
   appendStringArray(sp, 'category', params.category);
+  appendStringArray(sp, 'brand', params.brand);
   appendStringArray(sp, 'occasion', params.occasion);
   appendStringArray(sp, 'style', params.style);
   appendStringArray(sp, 'size', params.size);
@@ -117,4 +120,23 @@ export async function fetchSimilarProducts(
     },
   );
   return unwrapKygoApiBody<ProductListResponseDto>(raw);
+}
+
+export async function fetchWebProductBrands(): Promise<{ brands: string[] }> {
+  const raw = await httpRequestOrThrow<unknown>('/web/products/brands', { method: 'GET' });
+  return unwrapKygoApiBody<{ brands: string[] }>(raw);
+}
+
+export async function fetchWebProductRentalCalendar(
+  productId: string,
+  params: { fromDate: string; toDate: string },
+): Promise<{ unavailableDates: string[] }> {
+  const sp = new URLSearchParams();
+  sp.set('fromDate', params.fromDate);
+  sp.set('toDate', params.toDate);
+  const raw = await httpRequestOrThrow<unknown>(
+    `/web/products/${encodeURIComponent(productId)}/rental-calendar?${sp.toString()}`,
+    { method: 'GET' },
+  );
+  return unwrapKygoApiBody<{ unavailableDates: string[] }>(raw);
 }

@@ -10,10 +10,9 @@ import { useAppContext } from '@/modules/app-state';
 import RentalCalendar from '../components/RentalCalendar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useProductDetailQuery } from '@/hooks/use-products-query';
+import { useProductDetailQuery, useProductRentalCalendarQuery, useSimilarProductsQuery } from '@/hooks/use-products-query';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
-import { useSimilarProductsQuery } from '@/hooks/use-products-query';
 import ProductCard from '../components/ProductCard';
 import ProductCardMobile from '../components/ProductCardMobile';
 
@@ -51,6 +50,24 @@ const ProductDetail = () => {
   const mockProduct = useMemo(() => products.find((p) => p.id === id), [id]);
   const detailQuery = useProductDetailQuery(id);
   const similarQuery = useSimilarProductsQuery(id, 4);
+
+  const rentalCalendarRange = useMemo(() => {
+    const from = new Date();
+    const to = new Date();
+    to.setMonth(to.getMonth() + 8);
+    const toYmd = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    return { fromDate: toYmd(from), toDate: toYmd(to) };
+  }, [id]);
+
+  const rentalCalendarQuery = useProductRentalCalendarQuery(
+    isPublicApiConfigured() ? id : undefined,
+    rentalCalendarRange,
+  );
 
   const product = useMemo((): Product | null => {
     if (!isPublicApiConfigured()) {
@@ -123,9 +140,16 @@ const ProductDetail = () => {
   };
 
   const unavailableSet = useMemo(() => {
-    const dates = product?.unavailableDates ?? [];
-    return new Set(dates.map((x) => x.slice(0, 10)));
-  }, [product?.unavailableDates]);
+    const apiDates = rentalCalendarQuery.data?.unavailableDates ?? [];
+    const mockDates = product?.unavailableDates ?? [];
+    const merged = [...apiDates, ...mockDates.map((x) => x.slice(0, 10))];
+    return new Set(merged);
+  }, [product?.unavailableDates, rentalCalendarQuery.data?.unavailableDates]);
+
+  const unavailableDatesForCalendar = useMemo(
+    () => [...unavailableSet].sort((a, b) => a.localeCompare(b)),
+    [unavailableSet],
+  );
 
   const returnDate = useMemo(() => {
     if (!rentStartDate) return null;
@@ -526,7 +550,7 @@ const ProductDetail = () => {
               </label>
 
               <RentalCalendar
-                unavailableDates={product.unavailableDates || []}
+                unavailableDates={unavailableDatesForCalendar}
                 onDateSelect={(date) => {
                   if (!date) {
                     setRentStartDate(null);

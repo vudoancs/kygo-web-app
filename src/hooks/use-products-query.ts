@@ -9,6 +9,8 @@ import {
   fetchNewProducts,
   fetchFeaturedProducts,
   fetchSimilarProducts,
+  fetchWebProductBrands,
+  fetchWebProductRentalCalendar,
 } from '@/services/products.service';
 import { getErrorMessage } from '@/services/http/errors';
 
@@ -38,11 +40,13 @@ export const productKeys = {
       rentEnd,
       sortBy,
       sortOrder,
+      brand,
     } = opts;
     return [
       ...productKeys.all,
       'list',
       keyPartArr(category),
+      keyPartArr(brand),
       page,
       pageSize,
       keyPartArr(occasion),
@@ -61,6 +65,9 @@ export const productKeys = {
   },
   detail: (id: string) => [...productKeys.all, 'detail', id] as const,
   similar: (id: string, limit: number) => [...productKeys.all, 'similar', id, limit] as const,
+  brands: () => [...productKeys.all, 'brands'] as const,
+  rentalCalendar: (id: string, from: string, to: string) =>
+    [...productKeys.all, 'rental-calendar', id, from, to] as const,
 };
 
 export function useProductsQuery(options?: UseProductsQueryOptions | string) {
@@ -129,6 +136,44 @@ export function useSimilarProductsQuery(id: string | undefined, limit = 4) {
     queryKey: productKeys.similar(id ?? '', limit),
     queryFn: () => fetchSimilarProducts(id!, limit),
     enabled,
+    retry: 1,
+    meta: { getErrorMessage },
+  });
+}
+
+export function useWebProductBrandsQuery() {
+  const enabled = isPublicApiConfigured();
+  return useQuery({
+    queryKey: productKeys.brands(),
+    queryFn: fetchWebProductBrands,
+    enabled,
+    staleTime: 5 * 60_000,
+    retry: 1,
+    meta: { getErrorMessage },
+  });
+}
+
+export function useProductRentalCalendarQuery(
+  productId: string | undefined,
+  range: { fromDate: string; toDate: string } | undefined,
+) {
+  const enabled =
+    Boolean(productId) &&
+    Boolean(range?.fromDate && range?.toDate) &&
+    isPublicApiConfigured();
+  return useQuery({
+    queryKey: productKeys.rentalCalendar(
+      productId ?? '',
+      range?.fromDate ?? '',
+      range?.toDate ?? '',
+    ),
+    queryFn: () =>
+      fetchWebProductRentalCalendar(productId!, {
+        fromDate: range!.fromDate,
+        toDate: range!.toDate,
+      }),
+    enabled,
+    staleTime: 60_000,
     retry: 1,
     meta: { getErrorMessage },
   });
