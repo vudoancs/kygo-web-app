@@ -130,7 +130,7 @@ export async function fetchWebProductBrands(): Promise<{ brands: string[] }> {
 export async function fetchWebProductRentalCalendar(
   productId: string,
   params: { fromDate: string; toDate: string },
-): Promise<{ unavailableDates: string[] }> {
+): Promise<{ unavailableDates: string[]; rentedDates: string[]; bookedDates: string[] }> {
   const sp = new URLSearchParams();
   sp.set('fromDate', params.fromDate);
   sp.set('toDate', params.toDate);
@@ -138,5 +138,9 @@ export async function fetchWebProductRentalCalendar(
     `/web/products/${encodeURIComponent(productId)}/rental-calendar?${sp.toString()}`,
     { method: 'GET' },
   );
-  return unwrapKygoApiBody<{ unavailableDates: string[] }>(raw);
+  return unwrapKygoApiBody<{
+    unavailableDates: string[];
+    rentedDates: string[];
+    bookedDates: string[];
+  }>(raw);
 }

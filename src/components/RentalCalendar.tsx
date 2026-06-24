@@ -1,20 +1,55 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ymdInVn } from '@/libs/vn-date';
 
 interface RentalCalendarProps {
-  unavailableDates: string[];
+  unavailableDates?: string[];
+  rentedDates?: string[];
+  bookedDates?: string[];
+  focusKey?: string;
+  isLoading?: boolean;
   onDateSelect: (date: Date | null) => void;
   selectedDate: Date | null;
 }
 
+function ymdFromCalendarCell(year: number, monthIndex: number, day: number): string {
+  const m = String(monthIndex + 1).padStart(2, '0');
+  const d = String(day).padStart(2, '0');
+  return `${year}-${m}-${d}`;
+}
+
 const RentalCalendar: React.FC<RentalCalendarProps> = ({
-  unavailableDates,
+  unavailableDates = [],
+  rentedDates = [],
+  bookedDates = [],
+  focusKey,
+  isLoading = false,
   onDateSelect,
   selectedDate,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const rentedSet = useMemo(() => new Set(rentedDates), [rentedDates]);
+  const bookedSet = useMemo(() => new Set(bookedDates), [bookedDates]);
+  const unavailableSet = useMemo(() => {
+    const merged = new Set(unavailableDates);
+    for (const d of rentedDates) merged.add(d);
+    for (const d of bookedDates) merged.add(d);
+    return merged;
+  }, [unavailableDates, rentedDates, bookedDates]);
+
+  useEffect(() => {
+    const all = [...rentedDates, ...bookedDates, ...unavailableDates];
+    if (!all.length) return;
+    const today = ymdInVn();
+    const sorted = [...new Set(all)].sort((a, b) => a.localeCompare(b));
+    const target = sorted.find((d) => d >= today) ?? sorted[0];
+    const [y, m] = target.split('-').map(Number);
+    if (!y || !m) return;
+    setCurrentMonth(new Date(y, m - 1, 1));
+  }, [focusKey, rentedDates, bookedDates, unavailableDates]);
 
   const daysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -24,10 +59,16 @@ const RentalCalendar: React.FC<RentalCalendarProps> = ({
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const isDateUnavailable = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return unavailableDates.includes(dateStr);
+  const getDateKind = (year: number, monthIndex: number, day: number): 'rented' | 'booked' | null => {
+    const dateStr = ymdFromCalendarCell(year, monthIndex, day);
+    if (rentedSet.has(dateStr)) return 'rented';
+    if (bookedSet.has(dateStr)) return 'booked';
+    if (unavailableSet.has(dateStr)) return 'booked';
+    return null;
   };
+
+  const isDateUnavailable = (year: number, monthIndex: number, day: number) =>
+    getDateKind(year, monthIndex, day) !== null;
 
   const isPastDate = (date: Date) => {
     const today = new Date();
@@ -45,9 +86,11 @@ const RentalCalendar: React.FC<RentalCalendarProps> = ({
   };
 
   const handleDateClick = (day: number) => {
-    const clickedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    
-    if (isPastDate(clickedDate) || isDateUnavailable(clickedDate)) {
+    const year = currentMonth.getFullYear();
+    const monthIndex = currentMonth.getMonth();
+    const clickedDate = new Date(year, monthIndex, day);
+
+    if (isPastDate(clickedDate) || isDateUnavailable(year, monthIndex, day)) {
       return;
     }
 
@@ -71,18 +114,18 @@ const RentalCalendar: React.FC<RentalCalendarProps> = ({
     const firstDay = firstDayOfMonth(currentMonth);
     const calendarDays = [];
 
-    // Empty cells for days before the first day of month
     for (let i = 0; i < firstDay; i++) {
       calendarDays.push(<div key={`empty-${i}`} className="aspect-square" />);
     }
 
-    // Days of the month
     for (let day = 1; day <= days; day++) {
       const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-      const unavailable = isDateUnavailable(date);
+      const year = currentMonth.getFullYear();
+      const monthIndex = currentMonth.getMonth();
+      const kind = getDateKind(year, monthIndex, day);
       const past = isPastDate(date);
       const selected = isSameDay(selectedDate, date);
-      const disabled = past || unavailable;
+      const disabled = past || kind !== null;
 
       calendarDays.push(
         <button
@@ -92,15 +135,17 @@ const RentalCalendar: React.FC<RentalCalendarProps> = ({
           className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
             selected
               ? 'bg-[#b8465f] text-white'
-              : disabled
-              ? 'text-gray-300 cursor-not-allowed'
-              : unavailable
-              ? 'text-red-300 line-through cursor-not-allowed'
-              : 'text-gray-700 hover:bg-rose-50 hover:text-[#b8465f]'
+              : past
+                ? 'text-gray-300 cursor-not-allowed'
+                : kind === 'rented'
+                  ? 'bg-red-100 text-red-600 line-through cursor-not-allowed'
+                  : kind === 'booked'
+                    ? 'bg-blue-100 text-blue-700 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-rose-50 hover:text-[#b8465f]'
           }`}
         >
           {day}
-        </button>
+        </button>,
       );
     }
 
@@ -109,14 +154,16 @@ const RentalCalendar: React.FC<RentalCalendarProps> = ({
 
   const monthNames = [
     'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
   ];
 
   const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4">
-      {/* Calendar Header */}
+      {isLoading ? (
+        <p className="mb-3 text-center text-sm text-gray-500">Đang tải lịch thuê…</p>
+      ) : null}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={prevMonth}
@@ -135,7 +182,6 @@ const RentalCalendar: React.FC<RentalCalendarProps> = ({
         </button>
       </div>
 
-      {/* Day Names */}
       <div className="grid grid-cols-7 gap-1 mb-2">
         {dayNames.map((day) => (
           <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
@@ -144,25 +190,25 @@ const RentalCalendar: React.FC<RentalCalendarProps> = ({
         ))}
       </div>
 
-      {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-1">
         {renderCalendar()}
       </div>
 
-      {/* Legend */}
       <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap gap-4 text-xs">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-[#b8465f] rounded"></div>
           <span className="text-gray-600">Đã chọn</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gray-100 rounded"></div>
+          <div className="w-4 h-4 bg-white border border-gray-200 rounded"></div>
           <span className="text-gray-600">Có sẵn</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gray-50 rounded border border-gray-200 text-gray-300 flex items-center justify-center">
-            <span className="line-through text-xs">X</span>
-          </div>
+          <div className="w-4 h-4 bg-red-100 rounded border border-red-200"></div>
+          <span className="text-gray-600">Đã thuê</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-blue-100 rounded border border-blue-200"></div>
           <span className="text-gray-600">Đã đặt</span>
         </div>
       </div>

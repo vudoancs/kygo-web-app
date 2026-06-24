@@ -11,6 +11,7 @@ import RentalCalendar from '../components/RentalCalendar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProductDetailQuery, useProductRentalCalendarQuery, useSimilarProductsQuery } from '@/hooks/use-products-query';
+import { ymdInVn, defaultRentalCalendarQueryRange } from '@/libs/vn-date';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import ProductCard from '../components/ProductCard';
@@ -51,18 +52,7 @@ const ProductDetail = () => {
   const detailQuery = useProductDetailQuery(id);
   const similarQuery = useSimilarProductsQuery(id, 4);
 
-  const rentalCalendarRange = useMemo(() => {
-    const from = new Date();
-    const to = new Date();
-    to.setMonth(to.getMonth() + 8);
-    const toYmd = (d: Date) => {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    };
-    return { fromDate: toYmd(from), toDate: toYmd(to) };
-  }, [id]);
+  const rentalCalendarRange = useMemo(() => defaultRentalCalendarQueryRange(), [id]);
 
   const rentalCalendarQuery = useProductRentalCalendarQuery(
     isPublicApiConfigured() ? id : undefined,
@@ -132,19 +122,27 @@ const ProductDetail = () => {
     return d;
   };
 
-  const toLocalIsoDate = (date: Date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  };
+  const toLocalIsoDate = (date: Date) => ymdInVn(date);
 
   const unavailableSet = useMemo(() => {
-    const apiDates = rentalCalendarQuery.data?.unavailableDates ?? [];
+    const api = rentalCalendarQuery.data;
+    const apiDates = api?.unavailableDates ?? [];
     const mockDates = product?.unavailableDates ?? [];
     const merged = [...apiDates, ...mockDates.map((x) => x.slice(0, 10))];
     return new Set(merged);
   }, [product?.unavailableDates, rentalCalendarQuery.data?.unavailableDates]);
+
+  const rentedDatesForCalendar = useMemo(() => {
+    const fromApi = rentalCalendarQuery.data?.rentedDates ?? [];
+    return [...new Set(fromApi)].sort((a, b) => a.localeCompare(b));
+  }, [rentalCalendarQuery.data?.rentedDates]);
+
+  const bookedDatesForCalendar = useMemo(() => {
+    const fromApi = rentalCalendarQuery.data?.bookedDates ?? [];
+    const fallback = rentalCalendarQuery.data?.unavailableDates ?? [];
+    const merged = fromApi.length ? fromApi : fallback;
+    return [...new Set(merged)].sort((a, b) => a.localeCompare(b));
+  }, [rentalCalendarQuery.data?.bookedDates, rentalCalendarQuery.data?.unavailableDates]);
 
   const unavailableDatesForCalendar = useMemo(
     () => [...unavailableSet].sort((a, b) => a.localeCompare(b)),
@@ -550,7 +548,11 @@ const ProductDetail = () => {
               </label>
 
               <RentalCalendar
+                focusKey={id}
+                isLoading={isPublicApiConfigured() && rentalCalendarQuery.isPending}
                 unavailableDates={unavailableDatesForCalendar}
+                rentedDates={rentedDatesForCalendar}
+                bookedDates={bookedDatesForCalendar}
                 onDateSelect={(date) => {
                   if (!date) {
                     setRentStartDate(null);
