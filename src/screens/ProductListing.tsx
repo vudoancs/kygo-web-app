@@ -431,23 +431,21 @@ const ProductListing = () => {
     return pages;
   };
 
+  const ProductSearchBar = () => (
+    <div className="relative w-full">
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+      <input
+        type="search"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder={t('listing.searchNameOrCode')}
+        className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-800 focus:border-[#b8465f] focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20"
+      />
+    </div>
+  );
+
   const FilterSidebar = () => (
     <div className="space-y-6">
-      {/* Tìm kiếm */}
-      <div>
-        <h3 className="font-semibold text-gray-900 mb-3">{t('listing.search')}</h3>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('listing.searchNameOrCode')}
-            className="w-full rounded-lg border border-gray-300 py-2.5 pl-9 pr-3 text-sm text-gray-800 focus:border-[#b8465f] focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20"
-          />
-        </div>
-      </div>
-
       {/* Danh mục sản phẩm */}
       <div>
         <h3 className="font-semibold text-gray-900 mb-3">{t('filter.category')}</h3>
@@ -690,6 +688,11 @@ const ProductListing = () => {
 
         {/* Main Content */}
         <div className="flex-1">
+          {/* Tìm kiếm */}
+          <div className="mb-4">
+            <ProductSearchBar />
+          </div>
+
           {/* Date Range & Sorting Bar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-200">
             {/* Date Range Picker */}

@@ -124,25 +124,28 @@ const ProductDetail = () => {
 
   const toLocalIsoDate = (date: Date) => ymdInVn(date);
 
+  const rentalCalendarData = useMemo(() => {
+    return rentalCalendarQuery.data ?? detailQuery.data?.rentalCalendar ?? null;
+  }, [rentalCalendarQuery.data, detailQuery.data?.rentalCalendar]);
+
   const unavailableSet = useMemo(() => {
-    const api = rentalCalendarQuery.data;
-    const apiDates = api?.unavailableDates ?? [];
+    const apiDates = rentalCalendarData?.unavailableDates ?? [];
     const mockDates = product?.unavailableDates ?? [];
     const merged = [...apiDates, ...mockDates.map((x) => x.slice(0, 10))];
     return new Set(merged);
-  }, [product?.unavailableDates, rentalCalendarQuery.data?.unavailableDates]);
+  }, [product?.unavailableDates, rentalCalendarData?.unavailableDates]);
 
   const rentedDatesForCalendar = useMemo(() => {
-    const fromApi = rentalCalendarQuery.data?.rentedDates ?? [];
+    const fromApi = rentalCalendarData?.rentedDates ?? [];
     return [...new Set(fromApi)].sort((a, b) => a.localeCompare(b));
-  }, [rentalCalendarQuery.data?.rentedDates]);
+  }, [rentalCalendarData?.rentedDates]);
 
   const bookedDatesForCalendar = useMemo(() => {
-    const fromApi = rentalCalendarQuery.data?.bookedDates ?? [];
-    const fallback = rentalCalendarQuery.data?.unavailableDates ?? [];
+    const fromApi = rentalCalendarData?.bookedDates ?? [];
+    const fallback = rentalCalendarData?.unavailableDates ?? [];
     const merged = fromApi.length ? fromApi : fallback;
     return [...new Set(merged)].sort((a, b) => a.localeCompare(b));
-  }, [rentalCalendarQuery.data?.bookedDates, rentalCalendarQuery.data?.unavailableDates]);
+  }, [rentalCalendarData?.bookedDates, rentalCalendarData?.unavailableDates]);
 
   const unavailableDatesForCalendar = useMemo(
     () => [...unavailableSet].sort((a, b) => a.localeCompare(b)),
@@ -549,7 +552,11 @@ const ProductDetail = () => {
 
               <RentalCalendar
                 focusKey={id}
-                isLoading={isPublicApiConfigured() && rentalCalendarQuery.isPending}
+                isLoading={
+                  isPublicApiConfigured() &&
+                  rentalCalendarQuery.isPending &&
+                  !detailQuery.data?.rentalCalendar
+                }
                 unavailableDates={unavailableDatesForCalendar}
                 rentedDates={rentedDatesForCalendar}
                 bookedDates={bookedDatesForCalendar}
@@ -579,6 +586,14 @@ const ProductDetail = () => {
                 }}
                 selectedDate={rentStartDate}
               />
+
+              {isPublicApiConfigured() &&
+              rentalCalendarQuery.isError &&
+              !detailQuery.data?.rentalCalendar ? (
+                <p className="mt-2 text-xs text-amber-700">
+                  Không tải được lịch thuê. Vui lòng tải lại trang hoặc liên hệ shop.
+                </p>
+              ) : null}
 
               <div className="mt-4">
                 <label className="block font-semibold text-gray-900 mb-2">

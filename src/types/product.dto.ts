@@ -1,4 +1,10 @@
 /** DTO mẫu — đồng bộ với NestJS khi API sẵn sàng. */
+export interface ProductRentalCalendarDto {
+  unavailableDates: string[];
+  rentedDates?: string[];
+  bookedDates?: string[];
+}
+
 export interface ProductDto {
   id: string;
   /** SKU / mã váy (ERP). */
@@ -32,6 +38,7 @@ export interface ProductDto {
   /** ERP: cờ website */
   isNew?: boolean;
   isFeatured?: boolean;
+  rentalCalendar?: ProductRentalCalendarDto;
 }
 
 export interface ProductListResponseDto {

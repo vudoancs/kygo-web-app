@@ -138,9 +138,13 @@ export async function fetchWebProductRentalCalendar(
     `/web/products/${encodeURIComponent(productId)}/rental-calendar?${sp.toString()}`,
     { method: 'GET' },
   );
-  return unwrapKygoApiBody<{
-    unavailableDates: string[];
-    rentedDates: string[];
-    bookedDates: string[];
+  const body = unwrapKygoApiBody<{
+    unavailableDates?: string[];
+    rentedDates?: string[];
+    bookedDates?: string[];
   }>(raw);
+  const unavailableDates = body.unavailableDates ?? [];
+  const rentedDates = body.rentedDates ?? [];
+  const bookedDates = body.bookedDates?.length ? body.bookedDates : unavailableDates;
+  return { unavailableDates, rentedDates, bookedDates };
 }
