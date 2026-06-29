@@ -16,6 +16,8 @@ import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import ProductCard from '../components/ProductCard';
 import ProductCardMobile from '../components/ProductCardMobile';
+import { ProductImage } from '@/components/ProductImage';
+import { resolveProductImage } from '@/libs/product-image';
 
 const FAVORITE_STORAGE_KEY = 'kygo:favorites:productIds';
 
@@ -254,7 +256,7 @@ const ProductDetail = () => {
       productId: product.id,
       type: actionType,
       name: product.name,
-      image: product.image,
+      image: resolveProductImage(product.image),
       size: selectedSize,
       price: actionType === 'buy' ? product.buyPrice : calculateRentalTotal(),
       ...(actionType === 'rent' && {
@@ -337,7 +339,7 @@ const ProductDetail = () => {
         {/* Image Gallery */}
         <div>
           <div className="relative aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden mb-4">
-            <img
+            <ProductImage
               src={product.images[currentImageIndex]}
               alt={product.name}
               className="w-full h-full object-cover"
@@ -371,7 +373,7 @@ const ProductDetail = () => {
                     currentImageIndex === index ? 'border-[#b8465f]' : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <ProductImage src={img} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

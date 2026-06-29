@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Product } from '../data/products';
 import { useLanguage } from '../contexts/LanguageContext';
+import { ProductImage } from './ProductImage';
 
 interface ProductCardMobileProps {
   product: Product;
@@ -27,7 +28,7 @@ const ProductCardMobile: React.FC<ProductCardMobileProps> = ({ product }) => {
     >
       {/* Image */}
       <div className="aspect-[3/4] overflow-hidden bg-gray-100 rounded-lg mb-3">
-        <img
+        <ProductImage
           src={product.image}
           alt={product.name}
           className="w-full h-full object-cover"

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Trash2, ShoppingBag } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { useLanguage } from '../contexts/LanguageContext';
+import { ProductImage } from '@/components/ProductImage';
 
 const Cart = () => {
   const { cart, removeFromCart } = useAppContext();
@@ -66,7 +67,7 @@ const Cart = () => {
             <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 flex gap-4">
               {/* Product Image */}
               <div className="w-24 h-32 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                <ProductImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
               </div>
 
               {/* Product Info */}

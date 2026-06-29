@@ -7,6 +7,7 @@ import { useAppContext } from '@/modules/app-state';
 import { checkoutWeb } from '@/services/orders.service';
 import { getErrorMessage } from '@/services/http/errors';
 import { isPublicApiConfigured } from '@/libs/env';
+import { ProductImage } from '@/components/ProductImage';
 
 const Checkout = () => {
   const { cart, user, clearCart } = useAppContext();
@@ -341,7 +342,7 @@ const Checkout = () => {
                 {cart.map((item) => (
                   <div key={item.id} className="flex gap-3">
                     <div className="w-16 h-20 bg-white rounded overflow-hidden flex-shrink-0">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      <ProductImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 line-clamp-2">{item.name}</p>
