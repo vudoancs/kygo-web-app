@@ -20,6 +20,8 @@ export type FetchProductsParams = {
   search?: string;
   /** Thương hiệu (OR) */
   brand?: string[];
+  /** Tag sản phẩm (OR) */
+  tag?: string[];
   listingMode?: 'all' | 'rent' | 'buy';
   rentStart?: string;
   rentEnd?: string;
@@ -45,6 +47,7 @@ function appendQuery(sp: URLSearchParams, params: FetchProductsParams): void {
   sp.set('pageSize', String(params.pageSize ?? DEFAULT_PAGE_SIZE));
   appendStringArray(sp, 'category', params.category);
   appendStringArray(sp, 'brand', params.brand);
+  appendStringArray(sp, 'tag', params.tag);
   appendStringArray(sp, 'occasion', params.occasion);
   appendStringArray(sp, 'style', params.style);
   appendStringArray(sp, 'size', params.size);
@@ -125,6 +128,11 @@ export async function fetchSimilarProducts(
 export async function fetchWebProductBrands(): Promise<{ brands: string[] }> {
   const raw = await httpRequestOrThrow<unknown>('/web/products/brands', { method: 'GET' });
   return unwrapKygoApiBody<{ brands: string[] }>(raw);
+}
+
+export async function fetchWebProductTags(): Promise<{ tags: string[] }> {
+  const raw = await httpRequestOrThrow<unknown>('/web/products/tags', { method: 'GET' });
+  return unwrapKygoApiBody<{ tags: string[] }>(raw);
 }
 
 export async function fetchWebProductRentalCalendar(

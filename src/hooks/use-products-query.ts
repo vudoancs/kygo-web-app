@@ -10,6 +10,7 @@ import {
   fetchFeaturedProducts,
   fetchSimilarProducts,
   fetchWebProductBrands,
+  fetchWebProductTags,
   fetchWebProductRentalCalendar,
 } from '@/services/products.service';
 import { getErrorMessage } from '@/services/http/errors';
@@ -41,12 +42,14 @@ export const productKeys = {
       sortBy,
       sortOrder,
       brand,
+      tag,
     } = opts;
     return [
       ...productKeys.all,
       'list',
       keyPartArr(category),
       keyPartArr(brand),
+      keyPartArr(tag),
       page,
       pageSize,
       keyPartArr(occasion),
@@ -66,6 +69,7 @@ export const productKeys = {
   detail: (id: string) => [...productKeys.all, 'detail', id] as const,
   similar: (id: string, limit: number) => [...productKeys.all, 'similar', id, limit] as const,
   brands: () => [...productKeys.all, 'brands'] as const,
+  tags: () => [...productKeys.all, 'tags'] as const,
   rentalCalendar: (id: string, from: string, to: string) =>
     [...productKeys.all, 'rental-calendar', id, from, to] as const,
 };
@@ -146,6 +150,18 @@ export function useWebProductBrandsQuery() {
   return useQuery({
     queryKey: productKeys.brands(),
     queryFn: fetchWebProductBrands,
+    enabled,
+    staleTime: 5 * 60_000,
+    retry: 1,
+    meta: { getErrorMessage },
+  });
+}
+
+export function useWebProductTagsQuery() {
+  const enabled = isPublicApiConfigured();
+  return useQuery({
+    queryKey: productKeys.tags(),
+    queryFn: fetchWebProductTags,
     enabled,
     staleTime: 5 * 60_000,
     retry: 1,

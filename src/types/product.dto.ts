@@ -35,6 +35,7 @@ export interface ProductDto {
   occasion?: string[];
   styles?: string[];
   style?: string[];
+  tags?: string[];
   badge?: 'new' | 'sale' | 'hot';
   popular?: boolean;
   availableForRent?: boolean;

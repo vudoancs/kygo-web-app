@@ -9,7 +9,7 @@ import ProductCard from '../components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useProductsQuery, useWebProductBrandsQuery } from '@/hooks/use-products-query';
+import { useProductsQuery, useWebProductBrandsQuery, useWebProductTagsQuery } from '@/hooks/use-products-query';
 import { useWebCategoriesQuery } from '@/hooks/use-web-categories-query';
 import { flattenCategoryTreeForFilter, resolveProductListCategorySlugs, DRESSES_CATEGORY_ROOT_SLUG } from '@/libs/web-category-tree';
 import {
@@ -45,6 +45,7 @@ const ProductListing = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [priceRange] = useState<[number, number]>([0, 15000000]);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -55,6 +56,7 @@ const ProductListing = () => {
 
   const categoriesQuery = useWebCategoriesQuery();
   const brandsQuery = useWebProductBrandsQuery();
+  const tagsQuery = useWebProductTagsQuery();
   const categoryTree = categoriesQuery.data?.tree;
 
   const apiCategorySlugs = useMemo(
@@ -75,6 +77,7 @@ const ProductListing = () => {
       maxPrice: priceRange[1],
       search: appliedSearch.trim() || undefined,
       brand: selectedBrands.length ? [...selectedBrands] : undefined,
+      tag: selectedTags.length ? [...selectedTags] : undefined,
       listingMode: filterType,
       rentStart: startDate && endDate ? startDate : undefined,
       rentEnd: startDate && endDate ? endDate : undefined,
@@ -91,6 +94,7 @@ const ProductListing = () => {
       priceRange,
       appliedSearch,
       selectedBrands,
+      selectedTags,
       filterType,
       startDate,
       endDate,
@@ -102,9 +106,11 @@ const ProductListing = () => {
     const occ = searchParams.getAll('occasion');
     const sty = searchParams.getAll('style');
     const col = searchParams.getAll('color');
+    const tag = searchParams.getAll('tag');
     setSelectedOccasions(occ);
     setSelectedStyles(sty);
     setSelectedColors(col);
+    setSelectedTags(tag);
   }, [searchParams]);
 
   const handleSearchSubmit = () => {
@@ -121,6 +127,7 @@ const ProductListing = () => {
         selectedSizes.join(','),
         selectedColors.join(','),
         selectedBrands.join(','),
+        selectedTags.join(','),
         priceRange[0],
         priceRange[1],
         appliedSearch,
@@ -137,6 +144,7 @@ const ProductListing = () => {
       selectedSizes,
       selectedColors,
       selectedBrands,
+      selectedTags,
       priceRange,
       appliedSearch,
       filterType,
@@ -185,6 +193,29 @@ const ProductListing = () => {
   const toggleBrand = (brand: string) => {
     setSelectedBrands((prev) =>
       prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand],
+    );
+  };
+
+  const tagOptions = useMemo(() => {
+    const fromApi = tagsQuery.data?.tags ?? [];
+    if (fromApi.length) return fromApi;
+    const set = new Set<string>();
+    for (const p of products) {
+      for (const tag of p.tags || []) {
+        const s = String(tag || '').trim();
+        if (s) set.add(s);
+      }
+    }
+    for (const tag of selectedTags) {
+      const s = String(tag || '').trim();
+      if (s) set.add(s);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [tagsQuery.data?.tags, selectedTags]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag],
     );
   };
 
@@ -317,6 +348,12 @@ const ProductListing = () => {
         filtered = filtered.filter((p) => selectedBrands.includes(p.brand));
       }
 
+      if (selectedTags.length > 0) {
+        filtered = filtered.filter((p) =>
+          (p.tags || []).some((tag) => selectedTags.includes(tag)),
+        );
+      }
+
       filtered = filtered.filter(
         p => p.buyPrice >= priceRange[0] && p.buyPrice <= priceRange[1],
       );
@@ -365,6 +402,7 @@ const ProductListing = () => {
     selectedSizes,
     selectedColors,
     selectedBrands,
+    selectedTags,
     priceRange,
     sortBy,
     startDate,
@@ -522,6 +560,28 @@ const ProductListing = () => {
             ))
           ) : (
             <p className="text-sm text-gray-500">{t('listing.noBrands')}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Tags */}
+      <div className="border-t border-gray-200 pt-6">
+        <h3 className="font-semibold text-gray-900 mb-3">{t('filter.tag')}</h3>
+        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+          {tagOptions.length ? (
+            tagOptions.map((tag) => (
+              <label key={tag} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedTags.includes(tag)}
+                  onChange={() => toggleTag(tag)}
+                  className="rounded border-gray-300 text-[#b8465f] focus:ring-[#b8465f]"
+                />
+                <span className="text-sm text-gray-600">{tag}</span>
+              </label>
+            ))
+          ) : (
+            <p className="text-sm text-gray-500">{t('listing.noTags')}</p>
           )}
         </div>
       </div>
