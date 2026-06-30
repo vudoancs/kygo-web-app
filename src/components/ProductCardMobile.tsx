@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Product } from '../data/products';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ProductImage } from './ProductImage';
+import { ProductPriceLine } from './ProductPriceLine';
 
 interface ProductCardMobileProps {
   product: Product;
@@ -12,14 +13,8 @@ interface ProductCardMobileProps {
 
 const ProductCardMobile: React.FC<ProductCardMobileProps> = ({ product }) => {
   const { t } = useLanguage();
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN').format(price) + ' đ';
-  };
-
-  const formatPriceRange = (minPrice: number, maxPrice: number) => {
-    return `${new Intl.NumberFormat('vi-VN').format(minPrice)} đ - ${new Intl.NumberFormat('vi-VN').format(maxPrice)} đ`;
-  };
+  const originalRentPrice =
+    product.originalRentPricePerDay ?? product.originalRentPriceDanang;
 
   return (
     <Link 
@@ -47,37 +42,25 @@ const ProductCardMobile: React.FC<ProductCardMobileProps> = ({ product }) => {
         </p>
       ) : null}
 
-      {/* Buy Price Range */}
       <div className="mb-1">
-        {product.originalBuyPrice ? (
-          <div className="text-xs text-gray-700">
-            <span className="font-medium">{t('products.buy')}: </span>
-            {formatPriceRange(product.buyPrice, product.originalBuyPrice)}
-          </div>
-        ) : (
-          <div className="text-xs text-gray-700">
-            <span className="font-medium">{t('products.buy')}: </span>
-            {formatPrice(product.buyPrice)}
-          </div>
-        )}
+        <ProductPriceLine
+          label={`${t('products.buy')}:`}
+          price={product.buyPrice}
+          originalPrice={product.originalBuyPrice}
+          size="sm"
+          labelClassName="text-xs text-gray-700 font-medium"
+        />
       </div>
 
-      {/* Rental Price */}
       <div className="mb-2">
-        {product.rentByTime ? (
-          <div className="text-xs text-gray-700">
-            <span className="font-medium">{t('products.rentPerTime')}: </span>
-            {formatPrice(product.rentPricePerDay)}
-          </div>
-        ) : (
-          <div className="text-xs text-gray-700">
-            <span className="font-medium">{t('products.rentPerTime')}: </span>
-            {formatPriceRange(
-              product.rentPriceDanang ?? product.rentPricePerDay,
-              product.rentPriceProvince ?? product.rentPricePerDay,
-            )}
-          </div>
-        )}
+        <ProductPriceLine
+          label={`${t('products.rentPerTime')}:`}
+          price={product.rentPricePerDay}
+          originalPrice={originalRentPrice}
+          tone="accent"
+          size="sm"
+          labelClassName="text-xs text-gray-700 font-medium"
+        />
       </div>
 
       {/* Promotion Text */}

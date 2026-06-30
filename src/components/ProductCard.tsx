@@ -6,6 +6,7 @@ import { Heart, Plus } from 'lucide-react';
 import { Product } from '../data/products';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ProductImage } from './ProductImage';
+import { ProductPriceLine } from './ProductPriceLine';
 
 interface ProductCardProps {
   product: Product;
@@ -15,9 +16,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const { language, t } = useLanguage();
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN').format(price) + ' đ';
-  };
+  const originalRentPrice =
+    product.originalRentPricePerDay ?? product.originalRentPriceDanang;
 
   return (
     <div className="group bg-white rounded-sm overflow-hidden hover:shadow-lg transition-all relative">
@@ -78,15 +78,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
         {/* Pricing */}
         <div className="space-y-1 lg:space-y-2 mb-3 lg:mb-4">
-          <div className="flex items-center gap-1.5 lg:gap-2">
-            <span className="text-[9px] lg:text-xs text-gray-500">{t('products.buy')}:</span>
-            <span className="font-bold text-gray-900 text-xs lg:text-sm">{formatPrice(product.buyPrice)}</span>
-          </div>
+          <ProductPriceLine
+            label={`${t('products.buy')}:`}
+            price={product.buyPrice}
+            originalPrice={product.originalBuyPrice}
+            size="xs"
+            labelClassName="text-[9px] lg:text-xs text-gray-500 font-normal"
+          />
           <div className="space-y-0.5">
-            <div className="flex items-center gap-1.5 lg:gap-2">
-              <span className="text-[9px] lg:text-xs text-gray-500">{t('products.rentPerTime')}:</span>
-              <span className="font-bold text-[#b8465f] text-xs lg:text-sm">{formatPrice(product.rentPricePerDay)}</span>
-            </div>
+            <ProductPriceLine
+              label={`${t('products.rentPerTime')}:`}
+              price={product.rentPricePerDay}
+              originalPrice={originalRentPrice}
+              tone="accent"
+              size="xs"
+              labelClassName="text-[9px] lg:text-xs text-gray-500 font-normal"
+            />
             {!product.rentByTime ? (
               <p className="text-[8px] lg:text-[9px] text-gray-500 italic pl-0">
                 {t('products.extraDayNote')}

@@ -12,6 +12,8 @@ export interface Product {
   buyPrice: number;
   originalBuyPrice?: number; // Original price before discount
   rentPricePerDay: number;
+  /** Giá thuê gốc (trước khuyến mãi). */
+  originalRentPricePerDay?: number;
   rentPriceDanang?: number; // Rental price for Da Nang
   originalRentPriceDanang?: number; // Original rental price for Da Nang before discount
   rentPriceProvince?: number; // Rental price for provinces

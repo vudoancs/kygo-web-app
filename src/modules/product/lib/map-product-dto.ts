@@ -9,6 +9,7 @@ export function productFromDto(dto: ProductDto): Product {
   const buyPrice = dto.buyPrice ?? dto.price ?? 0;
   const rentPricePerDay =
     dto.rentPricePerDay ?? (buyPrice > 0 ? Math.max(1, Math.round(buyPrice * 0.1)) : 0);
+  const originalRentPricePerDay = dto.originalRentPricePerDay;
 
   return {
     id: dto.id,
@@ -21,7 +22,10 @@ export function productFromDto(dto: ProductDto): Product {
     image,
     images,
     buyPrice,
+    originalBuyPrice: dto.originalBuyPrice,
     rentPricePerDay,
+    originalRentPricePerDay,
+    originalRentPriceDanang: originalRentPricePerDay,
     deposit: dto.deposit ?? (buyPrice > 0 ? Math.round(buyPrice * 0.2) : 0),
     sizes: dto.sizes?.length ? dto.sizes : ['S', 'M', 'L'],
     colors: dto.colors?.length ? dto.colors : ['—'],

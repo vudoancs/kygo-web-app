@@ -17,6 +17,7 @@ import { productFromDto } from '@/modules/product';
 import ProductCard from '../components/ProductCard';
 import ProductCardMobile from '../components/ProductCardMobile';
 import { ProductImage } from '@/components/ProductImage';
+import { ProductPriceLine } from '@/components/ProductPriceLine';
 import { resolveProductImage } from '@/libs/product-image';
 
 const FAVORITE_STORAGE_KEY = 'kygo:favorites:productIds';
@@ -444,24 +445,21 @@ const ProductDetail = () => {
             {actionType === 'rent' ? (
               <div className="space-y-3">
                 <div>
-                  <div className="flex justify-between items-baseline">
+                  <div className="flex justify-between items-baseline gap-4">
                     <span className="text-gray-600">{t('products.rentPerTime')}:</span>
-                    <div className="flex items-baseline gap-2">
-                      {product.originalRentPriceDanang && (
-                        <span className="text-gray-400 line-through text-sm">
-                          {formatPrice(product.originalRentPriceDanang)}
-                        </span>
-                      )}
-                      <span className="font-semibold text-[#b8465f] text-xl">
-                        {formatPrice(product.rentPricePerDay)}
-                      </span>
-                    </div>
+                    <ProductPriceLine
+                      price={product.rentPricePerDay}
+                      originalPrice={product.originalRentPricePerDay ?? product.originalRentPriceDanang}
+                      tone="accent"
+                      size="xl"
+                      className="justify-end"
+                    />
                   </div>
                   <p className="text-xs text-gray-500 mt-1 text-right">
                     <span className="font-bold">{t('products.extraDayNote')}</span>
                   </p>
                 </div>
-                
+
                 <div className="pt-2 pb-2 border-t border-gray-200">
                   <p className="text-xs text-[#b8465f] italic">
                     {language === 'vi' 
@@ -474,20 +472,16 @@ const ProductDetail = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex justify-between items-baseline">
+                <div className="flex justify-between items-baseline gap-4">
                   <span className="text-gray-600">Giá bán:</span>
-                  <div className="flex items-baseline gap-2">
-                    {product.originalBuyPrice && (
-                      <span className="text-gray-400 line-through text-lg">
-                        {formatPrice(product.originalBuyPrice)}
-                      </span>
-                    )}
-                    <span className="font-bold text-gray-900 text-2xl">
-                      {formatPrice(product.buyPrice)}
-                    </span>
-                  </div>
+                  <ProductPriceLine
+                    price={product.buyPrice}
+                    originalPrice={product.originalBuyPrice}
+                    size="xl"
+                    className="justify-end"
+                  />
                 </div>
-                
+
                 <div className="pt-2 border-t border-gray-200">
                   <p className="text-xs text-[#b8465f] italic">
                     {language === 'vi' 

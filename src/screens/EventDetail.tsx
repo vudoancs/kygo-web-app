@@ -7,6 +7,7 @@ import { Calendar, MapPin, Award, Users, ChevronLeft, Building2, Image as ImageI
 import { events } from '../data/events';
 import { products } from '../data/products';
 import { useLanguage } from '../contexts/LanguageContext';
+import { ProductPriceLine } from '@/components/ProductPriceLine';
 
 const EventDetail = () => {
   const params = useParams();
@@ -273,23 +274,17 @@ const EventDetail = () => {
                     </h3>
                     
                     <div className="space-y-1">
-                      <div className="flex items-baseline gap-2">
-                        {dress.originalBuyPrice && (
-                          <span className="text-gray-400 line-through text-sm">
-                            {formatPrice(dress.originalBuyPrice)}
-                          </span>
-                        )}
-                        <span className="font-bold text-gray-900">
-                          {formatPrice(dress.buyPrice)}
-                        </span>
-                      </div>
-                      
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium text-[#b8465f]">
-                          {formatPrice(dress.rentPricePerDay)}
-                        </span>
-                        <span className="text-gray-500">{t('common.perDay')}</span>
-                      </div>
+                      <ProductPriceLine
+                        price={dress.buyPrice}
+                        originalPrice={dress.originalBuyPrice}
+                        size="md"
+                      />
+                      <ProductPriceLine
+                        price={dress.rentPricePerDay}
+                        originalPrice={dress.originalRentPricePerDay ?? dress.originalRentPriceDanang}
+                        tone="accent"
+                        size="sm"
+                      />
                     </div>
                   </div>
                 </Link>
