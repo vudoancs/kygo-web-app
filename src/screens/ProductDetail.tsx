@@ -55,7 +55,7 @@ const ProductDetail = () => {
   const detailQuery = useProductDetailQuery(id);
   const similarQuery = useSimilarProductsQuery(id, 4);
 
-  const rentalCalendarRange = useMemo(() => defaultRentalCalendarQueryRange(), [id]);
+  const rentalCalendarRange = useMemo(() => defaultRentalCalendarQueryRange(), []);
 
   const rentalCalendarQuery = useProductRentalCalendarQuery(
     isPublicApiConfigured() ? id : undefined,

@@ -44,13 +44,6 @@ const EventDetail = () => {
   // Get related dresses
   const relatedDresses = products.filter(p => event.relatedDresses.includes(p.id)).slice(0, 4);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Banner */}

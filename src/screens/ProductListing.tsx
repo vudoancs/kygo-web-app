@@ -111,24 +111,44 @@ const ProductListing = () => {
     setAppliedSearch(searchQuery);
   };
 
+  const pageResetKey = useMemo(
+    () =>
+      [
+        category ?? '',
+        apiCategorySlugs?.join(',') ?? '',
+        selectedOccasions.join(','),
+        selectedStyles.join(','),
+        selectedSizes.join(','),
+        selectedColors.join(','),
+        selectedBrands.join(','),
+        priceRange[0],
+        priceRange[1],
+        appliedSearch,
+        filterType,
+        startDate,
+        endDate,
+        sortBy,
+      ].join('|'),
+    [
+      category,
+      apiCategorySlugs,
+      selectedOccasions,
+      selectedStyles,
+      selectedSizes,
+      selectedColors,
+      selectedBrands,
+      priceRange,
+      appliedSearch,
+      filterType,
+      startDate,
+      endDate,
+      sortBy,
+    ],
+  );
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [
-    category,
-    apiCategorySlugs?.join(','),
-    selectedOccasions.join(','),
-    selectedStyles.join(','),
-    selectedSizes.join(','),
-    selectedColors.join(','),
-    selectedBrands.join(','),
-    priceRange[0],
-    priceRange[1],
-    appliedSearch,
-    filterType,
-    startDate,
-    endDate,
-    sortBy,
-  ]);
+  }, [pageResetKey]);
 
   const productsQuery = useProductsQuery(listQueryArgs);
 
