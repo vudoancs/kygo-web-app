@@ -43,7 +43,7 @@ const ProductListing = () => {
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [priceRange] = useState<[number, number]>([0, 15000000]);
@@ -73,7 +73,7 @@ const ProductListing = () => {
       color: selectedColors.length ? [...selectedColors] : undefined,
       minPrice: priceRange[0],
       maxPrice: priceRange[1],
-      search: debouncedSearch.trim() || undefined,
+      search: appliedSearch.trim() || undefined,
       brand: selectedBrands.length ? [...selectedBrands] : undefined,
       listingMode: filterType,
       rentStart: startDate && endDate ? startDate : undefined,
@@ -89,7 +89,7 @@ const ProductListing = () => {
       selectedSizes,
       selectedColors,
       priceRange,
-      debouncedSearch,
+      appliedSearch,
       selectedBrands,
       filterType,
       startDate,
@@ -107,10 +107,9 @@ const ProductListing = () => {
     setSelectedColors(col);
   }, [searchParams]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const handleSearchSubmit = () => {
+    setAppliedSearch(searchQuery);
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -124,7 +123,7 @@ const ProductListing = () => {
     selectedBrands.join(','),
     priceRange[0],
     priceRange[1],
-    debouncedSearch,
+    appliedSearch,
     filterType,
     startDate,
     endDate,
@@ -302,8 +301,8 @@ const ProductListing = () => {
         p => p.buyPrice >= priceRange[0] && p.buyPrice <= priceRange[1],
       );
 
-      if (debouncedSearch.trim()) {
-        const q = debouncedSearch.trim().toLowerCase();
+      if (appliedSearch.trim()) {
+        const q = appliedSearch.trim().toLowerCase();
         filtered = filtered.filter(
           p =>
             p.name.toLowerCase().includes(q) ||
@@ -350,7 +349,7 @@ const ProductListing = () => {
     sortBy,
     startDate,
     endDate,
-    debouncedSearch,
+    appliedSearch,
   ]);
 
   const totalFromApi = productsQuery.data?.total;
@@ -432,16 +431,28 @@ const ProductListing = () => {
   };
 
   const ProductSearchBar = () => (
-    <div className="relative w-full">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+    <form
+      className="relative w-full"
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSearchSubmit();
+      }}
+    >
+      <button
+        type="submit"
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-[#b8465f]"
+        aria-label={t('listing.searchNameOrCode')}
+      >
+        <Search className="h-4 w-4" />
+      </button>
       <input
-        type="search"
+        type="text"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder={t('listing.searchNameOrCode')}
         className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-800 focus:border-[#b8465f] focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20"
       />
-    </div>
+    </form>
   );
 
   const FilterSidebar = () => (
