@@ -19,6 +19,8 @@ import {
 } from '@/libs/product-list-sort';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
+import { sortLoaiTags } from '@/modules/product/constants/product-loai-tags';
+import { ProductLoaiFilter, SelectedLoaiChips } from '@/components/ProductLoaiFilter';
 import { useLanguage } from '../contexts/LanguageContext';
 
 function useOptionalSlugParam(): string | undefined {
@@ -197,26 +199,34 @@ const ProductListing = () => {
   };
 
   const tagOptions = useMemo(() => {
-    const fromApi = tagsQuery.data?.tags ?? [];
-    if (fromApi.length) return fromApi;
     const set = new Set<string>();
-    for (const p of products) {
-      for (const tag of p.tags || []) {
-        const s = String(tag || '').trim();
-        if (s) set.add(s);
-      }
+    for (const tag of tagsQuery.data?.tags ?? []) {
+      const s = String(tag || '').trim();
+      if (s) set.add(s);
     }
     for (const tag of selectedTags) {
       const s = String(tag || '').trim();
       if (s) set.add(s);
     }
-    return [...set].sort((a, b) => a.localeCompare(b, 'vi'));
-  }, [tagsQuery.data?.tags, selectedTags]);
+    if (!set.size && !isApi) {
+      for (const p of products) {
+        for (const tag of p.tags || []) {
+          const s = String(tag || '').trim();
+          if (s) set.add(s);
+        }
+      }
+    }
+    return sortLoaiTags([...set]);
+  }, [isApi, tagsQuery.data?.tags, selectedTags]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag],
     );
+  };
+
+  const clearSelectedLoai = () => {
+    setSelectedTags([]);
   };
 
   const colorOptions = useMemo(() => {
@@ -542,6 +552,17 @@ const ProductListing = () => {
         </div>
       </div>
 
+      {/* Loại váy */}
+      <div className="border-t border-gray-200 pt-6">
+        <h3 className="font-semibold text-gray-900 mb-3">{t('filter.loai')}</h3>
+        <ProductLoaiFilter
+          availableTags={tagOptions}
+          selectedTags={selectedTags}
+          onToggle={toggleTag}
+          onClear={clearSelectedLoai}
+        />
+      </div>
+
       {/* Thương hiệu */}
       <div className="border-t border-gray-200 pt-6">
         <h3 className="font-semibold text-gray-900 mb-3">{t('filter.brand')}</h3>
@@ -560,28 +581,6 @@ const ProductListing = () => {
             ))
           ) : (
             <p className="text-sm text-gray-500">{t('listing.noBrands')}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Tags */}
-      <div className="border-t border-gray-200 pt-6">
-        <h3 className="font-semibold text-gray-900 mb-3">{t('filter.tag')}</h3>
-        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-          {tagOptions.length ? (
-            tagOptions.map((tag) => (
-              <label key={tag} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedTags.includes(tag)}
-                  onChange={() => toggleTag(tag)}
-                  className="rounded border-gray-300 text-[#b8465f] focus:ring-[#b8465f]"
-                />
-                <span className="text-sm text-gray-600">{tag}</span>
-              </label>
-            ))
-          ) : (
-            <p className="text-sm text-gray-500">{t('listing.noTags')}</p>
           )}
         </div>
       </div>
@@ -876,6 +875,13 @@ const ProductListing = () => {
               </button>
             </div>
           </div>
+
+          {/* Active loại filters */}
+          <SelectedLoaiChips
+            selectedTags={selectedTags}
+            onToggle={toggleTag}
+            onClear={clearSelectedLoai}
+          />
 
           {/* Product Count */}
           <div className="text-sm text-gray-600 mb-6">
