@@ -45,7 +45,7 @@ const Checkout = () => {
   };
 
   const calculateDeposit = () => {
-    return cart.reduce((sum, item) => sum + (item.deposit || 0), 0);
+    return cart.reduce((sum, item) => sum + (item.type === 'rent' ? item.deposit || 0 : 0), 0);
   };
 
   const calculateTotal = () => {
@@ -64,6 +64,14 @@ const Checkout = () => {
 
     if (!user) {
       router.push('/login?redirect=/checkout');
+      return;
+    }
+
+    const missingRentalInfo = cart.some(
+      (item) => item.type === 'rent' && (!item.rentStartDate || !item.rentDuration),
+    );
+    if (missingRentalInfo) {
+      alert('Vui lòng chọn ngày bắt đầu thuê và số ngày thuê cho sản phẩm thuê.');
       return;
     }
 

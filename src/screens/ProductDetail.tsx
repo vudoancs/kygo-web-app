@@ -225,7 +225,7 @@ const ProductDetail = () => {
   };
 
   const calculateRentalTotal = () => {
-    if (!rentStartDate || actionType !== 'rent') return 0;
+    if (!rentStartDate) return 0;
     
     // Giá 1 lần thuê mặc định là gói 3 ngày.
     // Thuê 1 ngày: giảm 10%.
@@ -261,6 +261,7 @@ const ProductDetail = () => {
       size: selectedSize,
       price: actionType === 'buy' ? product.buyPrice : calculateRentalTotal(),
       ...(actionType === 'rent' && {
+        deposit: product.deposit,
         rentStartDate: rentStartDate?.toISOString(),
         rentDuration: rentDuration,
       }),
@@ -421,6 +422,7 @@ const ProductDetail = () => {
           <div className="bg-gray-50 rounded-lg p-6 mb-6">
             <div className="flex gap-4 mb-4">
               <button
+                type="button"
                 onClick={() => setActionType('rent')}
                 className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
                   actionType === 'rent'
@@ -431,6 +433,7 @@ const ProductDetail = () => {
                 {t('productDetail.rentDress')}
               </button>
               <button
+                type="button"
                 onClick={() => setActionType('buy')}
                 className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
                   actionType === 'buy'
@@ -462,18 +465,18 @@ const ProductDetail = () => {
 
                 <div className="pt-2 pb-2 border-t border-gray-200">
                   <p className="text-xs text-[#b8465f] italic">
-                    {language === 'vi' 
+                    {language === 'vi'
                       ? '✨ Ưu đãi cho các khách hàng thân thiết, đối tác liên hệ.'
                       : language === 'en'
-                      ? '✨ Special offers for loyal customers and partners, please contact us.'
-                      : '✨ 단골 고객 및 파트너를 위한 특별 혜택은 문의해 주세요.'}
+                        ? '✨ Special offers for loyal customers and partners, please contact us.'
+                        : '✨ 단골 고객 및 파트너를 위한 특별 혜택은 문의해 주세요.'}
                   </p>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex justify-between items-baseline gap-4">
-                  <span className="text-gray-600">Giá bán:</span>
+                  <span className="text-gray-600">{t('products.buy')}:</span>
                   <ProductPriceLine
                     price={product.buyPrice}
                     originalPrice={product.originalBuyPrice}
@@ -484,11 +487,11 @@ const ProductDetail = () => {
 
                 <div className="pt-2 border-t border-gray-200">
                   <p className="text-xs text-[#b8465f] italic">
-                    {language === 'vi' 
+                    {language === 'vi'
                       ? '✨ Ưu đãi cho các khách hàng thân thiết, đối tác liên hệ.'
                       : language === 'en'
-                      ? '✨ Special offers for loyal customers and partners, please contact us.'
-                      : '✨ 단골 고객 및 파트너를 위한 특별 혜택은 문의해 주세요.'}
+                        ? '✨ Special offers for loyal customers and partners, please contact us.'
+                        : '✨ 단골 고객 및 파트너를 위한 특별 혜택은 문의해 주세요.'}
                   </p>
                 </div>
               </div>
@@ -537,7 +540,7 @@ const ProductDetail = () => {
 
           {/* Rental Date Selection */}
           {actionType === 'rent' && (
-            <div className="mb-6">
+          <div className="mb-6">
               <label className="block font-semibold text-gray-900 mb-3">
                 {language === 'vi'
                   ? 'Chọn ngày bắt đầu thuê'

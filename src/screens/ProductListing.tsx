@@ -364,9 +364,10 @@ const ProductListing = () => {
         );
       }
 
-      filtered = filtered.filter(
-        p => p.buyPrice >= priceRange[0] && p.buyPrice <= priceRange[1],
-      );
+      filtered = filtered.filter((p) => {
+        const unitPrice = filterType === 'buy' ? p.buyPrice : p.rentPricePerDay;
+        return unitPrice >= priceRange[0] && unitPrice <= priceRange[1];
+      });
 
       if (appliedSearch.trim()) {
         const q = appliedSearch.trim().toLowerCase();
@@ -390,10 +391,18 @@ const ProductListing = () => {
           );
           break;
         case 'price-asc':
-          filtered.sort((a, b) => a.buyPrice - b.buyPrice);
+          filtered.sort((a, b) => {
+            const pa = filterType === 'buy' ? a.buyPrice : a.rentPricePerDay;
+            const pb = filterType === 'buy' ? b.buyPrice : b.rentPricePerDay;
+            return pa - pb;
+          });
           break;
         case 'price-desc':
-          filtered.sort((a, b) => b.buyPrice - a.buyPrice);
+          filtered.sort((a, b) => {
+            const pa = filterType === 'buy' ? a.buyPrice : a.rentPricePerDay;
+            const pb = filterType === 'buy' ? b.buyPrice : b.rentPricePerDay;
+            return pb - pa;
+          });
           break;
         case 'newest':
           filtered.sort((a, b) => (b.badge === 'new' ? 1 : 0) - (a.badge === 'new' ? 1 : 0));
@@ -418,6 +427,7 @@ const ProductListing = () => {
     startDate,
     endDate,
     appliedSearch,
+    filterType,
   ]);
 
   const totalFromApi = productsQuery.data?.total;

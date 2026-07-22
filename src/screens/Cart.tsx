@@ -27,7 +27,7 @@ const Cart = () => {
   };
 
   const calculateDeposit = () => {
-    return cart.reduce((sum, item) => sum + (item.deposit || 0), 0);
+    return cart.reduce((sum, item) => sum + (item.type === 'rent' ? item.deposit || 0 : 0), 0);
   };
 
   const calculateTotal = () => {
@@ -79,11 +79,11 @@ const Cart = () => {
                     <div className="mt-2">
                       {item.type === 'rent' ? (
                         <span className="inline-block bg-rose-100 text-[#b8465f] text-xs px-3 py-1 rounded-full font-medium">
-                          Thuê
+                          {t('cart.rent')}
                         </span>
                       ) : (
                         <span className="inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">
-                          Mua
+                          {t('cart.buy')}
                         </span>
                       )}
                     </div>
@@ -136,11 +136,11 @@ const Cart = () => {
                 {/* Price */}
                 <div className="flex items-baseline gap-2 mt-2">
                   <span className="text-sm text-gray-600">
-                    {item.type === 'rent' ? 'Giá thuê:' : 'Giá:'}
+                    {item.type === 'rent' ? t('cart.rentalPrice') : t('cart.price')}:
                   </span>
                   <span className="font-semibold text-gray-900">{formatPrice(item.price)}</span>
                 </div>
-                {item.type === 'rent' && item.deposit && (
+                {item.type === 'rent' && item.deposit ? (
                   <div className="flex items-baseline gap-2">
                     <span className="text-sm text-gray-600">Tiền cọc:</span>
                     <span className="font-semibold text-gray-900">{formatPrice(item.deposit)}</span>

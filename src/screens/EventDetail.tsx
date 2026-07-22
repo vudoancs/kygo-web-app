@@ -268,11 +268,13 @@ const EventDetail = () => {
                     
                     <div className="space-y-1">
                       <ProductPriceLine
+                        label={`${t('products.buy')}:`}
                         price={dress.buyPrice}
                         originalPrice={dress.originalBuyPrice}
                         size="md"
                       />
                       <ProductPriceLine
+                        label={`${t('products.rentPerTime')}:`}
                         price={dress.rentPricePerDay}
                         originalPrice={dress.originalRentPricePerDay ?? dress.originalRentPriceDanang}
                         tone="accent"
