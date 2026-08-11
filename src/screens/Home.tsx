@@ -237,6 +237,16 @@ const Home = () => {
                   ))}
                 </div>
               </div>
+              {newArrivals.length > 0 ? (
+                <div className="mt-8 flex justify-center">
+                  <Link
+                    href="/products"
+                    className="inline-flex items-center gap-2 px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg border-2 border-[#b8465f] bg-white text-[#b8465f] hover:bg-rose-50 transition-colors font-medium text-sm lg:text-base"
+                  >
+                    {t('common.viewAll')} <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
+                  </Link>
+                </div>
+              ) : null}
             </>
           )}
         </div>
@@ -284,6 +294,16 @@ const Home = () => {
                   ))}
                 </div>
               </div>
+              {trending.length > 0 ? (
+                <div className="mt-8 flex justify-center">
+                  <Link
+                    href="/products"
+                    className="inline-flex items-center gap-2 px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg border-2 border-[#b8465f] bg-white text-[#b8465f] hover:bg-rose-50 transition-colors font-medium text-sm lg:text-base"
+                  >
+                    {t('common.viewAll')} <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
+                  </Link>
+                </div>
+              ) : null}
             </>
           )}
         </div>
