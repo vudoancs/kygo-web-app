@@ -145,7 +145,7 @@ const Cart = () => {
                     <span className="text-sm text-gray-600">Tiền cọc:</span>
                     <span className="font-semibold text-gray-900">{formatPrice(item.deposit)}</span>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           ))}
