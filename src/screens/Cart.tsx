@@ -12,7 +12,6 @@ const Cart = () => {
   const { cart, removeFromCart } = useAppContext();
   const router = useRouter();
   const { language, t } = useLanguage();
-  const [depositMethod, setDepositMethod] = useState<'cash' | 'id'>('cash');
   const [discountCode, setDiscountCode] = useState('');
 
   const formatPrice = (price: number) => {
@@ -26,14 +25,8 @@ const Cart = () => {
     return cart.reduce((sum, item) => sum + item.price, 0);
   };
 
-  const calculateDeposit = () => {
-    return cart.reduce((sum, item) => sum + (item.type === 'rent' ? item.deposit || 0 : 0), 0);
-  };
-
   const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const deposit = depositMethod === 'cash' ? calculateDeposit() : 0;
-    return subtotal + deposit;
+    return calculateSubtotal();
   };
 
   if (cart.length === 0) {
@@ -140,12 +133,6 @@ const Cart = () => {
                   </span>
                   <span className="font-semibold text-gray-900">{formatPrice(item.price)}</span>
                 </div>
-                {item.type === 'rent' && item.deposit ? (
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-sm text-gray-600">Tiền cọc:</span>
-                    <span className="font-semibold text-gray-900">{formatPrice(item.deposit)}</span>
-                  </div>
-                ) : null}
               </div>
             </div>
           ))}
@@ -175,52 +162,11 @@ const Cart = () => {
               </div>
             </div>
 
-            {/* Deposit Method Selection (only show if there are rental items) */}
-            {calculateDeposit() > 0 && (
-              <div className="mb-4 pb-4 border-b border-gray-200">
-                <label className="block text-sm font-medium text-gray-700 mb-3">{t('cart.depositMethod')}</label>
-                <div className="space-y-2">
-                  <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-[#b8465f] transition-colors">
-                    <input
-                      type="radio"
-                      name="depositMethod"
-                      value="cash"
-                      checked={depositMethod === 'cash'}
-                      onChange={() => setDepositMethod('cash')}
-                      className="w-4 h-4 text-[#b8465f] focus:ring-[#b8465f]"
-                    />
-                    <span className="ml-3 text-sm text-gray-900">{t('cart.cashDeposit')}</span>
-                  </label>
-                  <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-[#b8465f] transition-colors">
-                    <input
-                      type="radio"
-                      name="depositMethod"
-                      value="id"
-                      checked={depositMethod === 'id'}
-                      onChange={() => setDepositMethod('id')}
-                      className="w-4 h-4 text-[#b8465f] focus:ring-[#b8465f]"
-                    />
-                    <span className="ml-3 text-sm text-gray-900">{t('cart.idCardDeposit')}</span>
-                  </label>
-                </div>
-              </div>
-            )}
-
             <div className="space-y-3 mb-4 pb-4 border-b border-gray-200">
               <div className="flex justify-between text-gray-600">
                 <span>{t('cart.subtotal')}</span>
                 <span className="font-medium text-gray-900">{formatPrice(calculateSubtotal())}</span>
               </div>
-              {calculateDeposit() > 0 && (
-                <div className="flex justify-between text-gray-600">
-                  <span>{t('cart.depositFee')}</span>
-                  <span className="font-medium text-gray-900">
-                    {depositMethod === 'cash' ? formatPrice(calculateDeposit()) : (
-                      <span className="text-green-600 text-sm">{language === 'vi' ? 'Giấy tờ tùy thân' : language === 'en' ? 'ID card' : '신분증'}</span>
-                    )}
-                  </span>
-                </div>
-              )}
             </div>
 
             <div className="flex justify-between text-lg font-bold text-gray-900 mb-6">
@@ -232,7 +178,7 @@ const Cart = () => {
               onClick={() => router.push('/checkout')}
               className="w-full bg-[#b8465f] hover:bg-[#9d3a50] text-white py-3 px-6 rounded-lg font-semibold transition-colors mb-3"
             >
-              Tiến hành thanh toán
+              {t('cart.proceedToCheckout')}
             </button>
 
             <Link
@@ -246,11 +192,7 @@ const Cart = () => {
             <div className="mt-6 pt-6 border-t border-gray-200 text-sm text-gray-600 space-y-2">
               <p className="flex items-start gap-2">
                 <span className="text-green-600">✓</span>
-                <span>Miễn phí vận chuyển nội thành</span>
-              </p>
-              <p className="flex items-start gap-2">
-                <span className="text-green-600">✓</span>
-                <span>Hoàn tiền cọc trong 48h sau khi trả váy</span>
+                <span>Phí vận chuyển: liên hệ sau nếu giao tận nơi</span>
               </p>
               <p className="flex items-start gap-2">
                 <span className="text-green-600">✓</span>

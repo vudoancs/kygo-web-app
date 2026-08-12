@@ -44,12 +44,8 @@ const Checkout = () => {
     return cart.reduce((sum, item) => sum + item.price, 0);
   };
 
-  const calculateDeposit = () => {
-    return cart.reduce((sum, item) => sum + (item.type === 'rent' ? item.deposit || 0 : 0), 0);
-  };
-
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateDeposit();
+    return calculateSubtotal();
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -199,7 +195,7 @@ const Checkout = () => {
                     <MapPin className={`w-5 h-5 ${deliveryMethod === 'delivery' ? 'text-[#b8465f]' : 'text-gray-400'}`} />
                     <span className="font-semibold">Giao hàng tận nơi</span>
                   </div>
-                  <p className="text-sm text-gray-600">Miễn phí giao hàng nội thành</p>
+                  <p className="text-sm text-gray-600">Phí vận chuyển: liên hệ sau</p>
                 </button>
 
                 <button
@@ -367,15 +363,11 @@ const Checkout = () => {
                   <span>Tạm tính</span>
                   <span className="font-medium text-gray-900">{formatPrice(calculateSubtotal())}</span>
                 </div>
-                {calculateDeposit() > 0 && (
-                  <div className="flex justify-between text-gray-600">
-                    <span>Tiền cọc</span>
-                    <span className="font-medium text-gray-900">{formatPrice(calculateDeposit())}</span>
-                  </div>
-                )}
                 <div className="flex justify-between text-gray-600">
                   <span>Phí vận chuyển</span>
-                  <span className="font-medium text-green-600">Miễn phí</span>
+                  <span className={`font-medium ${deliveryMethod === 'delivery' ? 'text-gray-900' : 'text-green-600'}`}>
+                    {deliveryMethod === 'delivery' ? 'Liên hệ sau' : 'Miễn phí'}
+                  </span>
                 </div>
               </div>
 
