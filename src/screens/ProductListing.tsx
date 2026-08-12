@@ -127,8 +127,11 @@ const ProductListing = () => {
     setSelectedTags(tag);
   }, [searchParams]);
 
-  const handleSearchSubmit = () => {
-    setAppliedSearch(searchQuery);
+  /** Chỉ commit search (gọi API) khi Enter / bấm nút tìm — không search theo từng phím. */
+  const commitSearch = () => {
+    const next = searchQuery.trim();
+    setSearchQuery(next);
+    setAppliedSearch((prev) => (prev === next ? prev : next));
   };
 
   const pageResetKey = useMemo(
@@ -540,12 +543,12 @@ const ProductListing = () => {
     return pages;
   };
 
-  const ProductSearchBar = () => (
+  const productSearchBar = (
     <form
       className="relative w-full"
       onSubmit={(e) => {
         e.preventDefault();
-        handleSearchSubmit();
+        commitSearch();
       }}
     >
       <button
@@ -556,9 +559,17 @@ const ProductListing = () => {
         <Search className="h-4 w-4" />
       </button>
       <input
-        type="text"
+        type="search"
+        enterKeyHint="search"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return;
+          // Tránh submit khi IME (Telex/VNI) đang compose
+          if (e.nativeEvent.isComposing) return;
+          e.preventDefault();
+          commitSearch();
+        }}
         placeholder={t('listing.searchNameOrCode')}
         className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-800 focus:border-[#b8465f] focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20"
       />
@@ -822,7 +833,7 @@ const ProductListing = () => {
         <div className="flex-1">
           {/* Tìm kiếm */}
           <div className="mb-3">
-            <ProductSearchBar />
+            {productSearchBar}
           </div>
 
           {/* Date Range */}
