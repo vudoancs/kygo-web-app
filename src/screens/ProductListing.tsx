@@ -28,6 +28,7 @@ import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import {
   PRODUCT_LOAI_TAG_OPTIONS,
+  buildGroupedLoaiFilterOptions,
   sortLoaiTags,
 } from '@/modules/product/constants/product-loai-tags';
 import { buildProductColorFilterOptions } from '@/modules/product/constants/product-colors';
@@ -257,17 +258,21 @@ const ProductListing = () => {
     [tagOptions],
   );
 
+  const quickLoaiGroups = useMemo(
+    () => buildGroupedLoaiFilterOptions(quickLoaiOptions),
+    [quickLoaiOptions],
+  );
+
+  const quickLoaiLabel = useMemo(() => {
+    if (selectedTags.length === 0) return t('filter.all');
+    return sortLoaiTags(selectedTags).join(', ');
+  }, [selectedTags, t]);
+
   const quickColorValue =
     selectedColors.length === 0 ? FILTER_ALL_VALUE : selectedColors[0];
-  const quickLoaiValue =
-    selectedTags.length === 0 ? FILTER_ALL_VALUE : selectedTags[0];
 
   const handleQuickColorChange = (value: string) => {
     setSelectedColors(value === FILTER_ALL_VALUE ? [] : [value]);
-  };
-
-  const handleQuickLoaiChange = (value: string) => {
-    setSelectedTags(value === FILTER_ALL_VALUE ? [] : [value]);
   };
 
   const toggleColor = (c: string) => {
@@ -888,41 +893,90 @@ const ProductListing = () => {
               </SelectContent>
             </Select>
 
-            <Select value={quickLoaiValue} onValueChange={handleQuickLoaiChange}>
-              <SelectTrigger
-                className={`h-auto w-full rounded-lg border bg-white px-4 py-3 text-sm shadow-none transition-colors hover:border-[#b8465f] focus:ring-2 focus:ring-[#b8465f]/20 data-[size=default]:h-auto ${
-                  selectedTags.length
-                    ? 'border-[#b8465f] bg-[#b8465f]/5 text-[#b8465f]'
-                    : 'border-gray-300 text-gray-700'
-                }`}
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <Shirt
-                    className={`h-4 w-4 shrink-0 ${
-                      selectedTags.length ? 'text-[#b8465f]' : 'text-gray-400'
-                    }`}
-                  />
-                  <span className="truncate text-left">
-                    <span
-                      className={
-                        selectedTags.length ? 'text-[#b8465f]/80' : 'text-gray-500'
-                      }
-                    >
-                      {t('filter.loai')}:{' '}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={`flex h-auto w-full items-center justify-between gap-2 rounded-lg border bg-white px-4 py-3 text-sm shadow-none transition-colors hover:border-[#b8465f] focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20 data-[size=default]:h-auto ${
+                    selectedTags.length
+                      ? 'border-[#b8465f] bg-[#b8465f]/5 text-[#b8465f]'
+                      : 'border-gray-300 text-gray-700'
+                  }`}
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <Shirt
+                      className={`h-4 w-4 shrink-0 ${
+                        selectedTags.length ? 'text-[#b8465f]' : 'text-gray-400'
+                      }`}
+                    />
+                    <span className="truncate text-left">
+                      <span
+                        className={
+                          selectedTags.length ? 'text-[#b8465f]/80' : 'text-gray-500'
+                        }
+                      >
+                        {t('filter.loai')}:{' '}
+                      </span>
+                      <span className={selectedTags.length ? 'text-[#b8465f]' : 'text-gray-700'}>
+                        {quickLoaiLabel}
+                      </span>
                     </span>
-                    <SelectValue placeholder={t('filter.all')} />
                   </span>
-                </span>
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value={FILTER_ALL_VALUE}>{t('filter.all')}</SelectItem>
-                {quickLoaiOptions.map((tag) => (
-                  <SelectItem key={tag} value={tag}>
-                    {tag}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  <span
+                    className={`inline-flex min-w-7 shrink-0 items-center justify-center rounded-full px-2 py-0.5 text-xs ${
+                      selectedTags.length
+                        ? 'bg-rose-100 text-[#b8465f]'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {selectedTags.length}
+                  </span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[min(100vw-2rem,22rem)] p-0" align="start">
+                <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 py-2">
+                  <p className="text-xs font-medium text-gray-600">{t('filter.loaiMultiHint')}</p>
+                  {selectedTags.length > 0 ? (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-[#b8465f] hover:underline"
+                      onClick={clearSelectedLoai}
+                    >
+                      {t('filter.loaiClearAll')}
+                    </button>
+                  ) : null}
+                </div>
+                <div className="max-h-72 space-y-4 overflow-y-auto p-3">
+                  {quickLoaiGroups.length ? (
+                    quickLoaiGroups.map((group) => (
+                      <div key={group.groupId}>
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                          {t(group.i18nKey)}
+                        </p>
+                        <div className="space-y-1">
+                          {group.tags.map((tag) => (
+                            <label
+                              key={tag}
+                              className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-rose-50"
+                            >
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-[#b8465f] focus:ring-[#b8465f]"
+                                checked={selectedTags.includes(tag)}
+                                onChange={() => toggleTag(tag)}
+                              />
+                              <span className="text-sm text-gray-800">{tag}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">{t('listing.noLoai')}</p>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Sorting Bar */}
