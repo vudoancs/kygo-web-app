@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { SlidersHorizontal, Calendar, ChevronLeft, ChevronRight, Search, Palette, Shirt } from 'lucide-react';
 import { products } from '../data/products';
 import ProductCard from '../components/ProductCard';
@@ -37,6 +37,13 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const FILTER_ALL_VALUE = '__all__';
 
+function stringArraysEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const left = [...a].sort();
+  const right = [...b].sort();
+  return left.every((value, index) => value === right[index]);
+}
+
 function useOptionalSlugParam(): string | undefined {
   const params = useParams();
   const raw = params?.slug;
@@ -50,7 +57,12 @@ const PRODUCTS_PER_PAGE = 12;
 
 const ProductListing = () => {
   const category = useOptionalSlugParam();
+  const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
+  const skipUrlReadRef = useRef(false);
+  const urlHydratedRef = useRef(false);
   const { t } = useLanguage();
   const isApi = isPublicApiConfigured();
   const [sortBy, setSortBy] = useState<ProductListingSortKey>(DEFAULT_PRODUCT_LISTING_SORT);
@@ -119,15 +131,51 @@ const ProductListing = () => {
   );
 
   useEffect(() => {
+    if (skipUrlReadRef.current) {
+      skipUrlReadRef.current = false;
+      return;
+    }
+
     const occ = searchParams.getAll('occasion');
     const sty = searchParams.getAll('style');
     const col = searchParams.getAll('color');
     const tag = searchParams.getAll('tag');
-    setSelectedOccasions(occ);
-    setSelectedStyles(sty);
-    setSelectedColors(col);
-    setSelectedTags(tag);
-  }, [searchParams]);
+
+    setSelectedOccasions((prev) => (stringArraysEqual(prev, occ) ? prev : occ));
+    setSelectedStyles((prev) => (stringArraysEqual(prev, sty) ? prev : sty));
+    setSelectedColors((prev) => (stringArraysEqual(prev, col) ? prev : col));
+    setSelectedTags((prev) => (stringArraysEqual(prev, tag) ? prev : tag));
+    urlHydratedRef.current = true;
+  }, [searchParamsString, searchParams]);
+
+  useEffect(() => {
+    if (!urlHydratedRef.current) return;
+
+    const params = new URLSearchParams(searchParamsString);
+    params.delete('occasion');
+    params.delete('style');
+    params.delete('color');
+    params.delete('tag');
+
+    selectedOccasions.forEach((value) => params.append('occasion', value));
+    selectedStyles.forEach((value) => params.append('style', value));
+    selectedColors.forEach((value) => params.append('color', value));
+    selectedTags.forEach((value) => params.append('tag', value));
+
+    const nextQuery = params.toString();
+    if (nextQuery === searchParamsString) return;
+
+    skipUrlReadRef.current = true;
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+  }, [
+    selectedOccasions,
+    selectedStyles,
+    selectedColors,
+    selectedTags,
+    pathname,
+    router,
+    searchParamsString,
+  ]);
 
   /** Chỉ commit search (gọi API) khi Enter / bấm nút tìm — không search theo từng phím. */
   const commitSearch = () => {
@@ -179,12 +227,38 @@ const ProductListing = () => {
 
   const productsQuery = useProductsQuery(listQueryArgs);
 
+  const listFiltersActive = useMemo(
+    () =>
+      selectedOccasions.length > 0 ||
+      selectedStyles.length > 0 ||
+      selectedSizes.length > 0 ||
+      selectedColors.length > 0 ||
+      selectedBrands.length > 0 ||
+      selectedTags.length > 0 ||
+      appliedSearch.trim().length > 0 ||
+      filterType !== 'all' ||
+      Boolean(startDate && endDate),
+    [
+      selectedOccasions,
+      selectedStyles,
+      selectedSizes,
+      selectedColors,
+      selectedBrands,
+      selectedTags,
+      appliedSearch,
+      filterType,
+      startDate,
+      endDate,
+    ],
+  );
+
   const baseProducts = useMemo(() => {
     if (!isApi) return products;
     if (productsQuery.isPending) return [];
     if (productsQuery.isSuccess && productsQuery.data) {
       const mapped = productsQuery.data.items.map(productFromDto);
       if (mapped.length > 0) return mapped;
+      if (listFiltersActive || (productsQuery.data.total ?? 0) === 0) return [];
       const pageFromApi = productsQuery.data.page ?? 1;
       if (pageFromApi <= 1) return products;
       return [];
@@ -193,6 +267,7 @@ const ProductListing = () => {
     return products;
   }, [
     isApi,
+    listFiltersActive,
     productsQuery.data,
     productsQuery.isError,
     productsQuery.isPending,
@@ -893,7 +968,7 @@ const ProductListing = () => {
               </SelectContent>
             </Select>
 
-            <Popover>
+            <Popover modal>
               <PopoverTrigger asChild>
                 <button
                   type="button"
@@ -958,6 +1033,7 @@ const ProductListing = () => {
                             <label
                               key={tag}
                               className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-rose-50"
+                              onPointerDown={(e) => e.stopPropagation()}
                             >
                               <input
                                 type="checkbox"

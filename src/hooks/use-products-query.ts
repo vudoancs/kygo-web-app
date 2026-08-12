@@ -86,6 +86,7 @@ export function useProductsQuery(options?: UseProductsQueryOptions | string) {
     queryKey: productKeys.list(full),
     queryFn: () => fetchProducts(full),
     enabled,
+    staleTime: 0,
     retry: 1,
     meta: { getErrorMessage },
   });
