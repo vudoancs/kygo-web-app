@@ -62,19 +62,19 @@ const ProductListing = () => {
   const searchParams = useSearchParams();
   const searchParamsString = searchParams.toString();
   const skipUrlReadRef = useRef(false);
-  const urlHydratedRef = useRef(false);
+  const urlHydratedRef = useRef(true);
   const { t } = useLanguage();
   const isApi = isPublicApiConfigured();
   const [sortBy, setSortBy] = useState<ProductListingSortKey>(DEFAULT_PRODUCT_LISTING_SORT);
   const [filterType, setFilterType] = useState<'all' | 'rent' | 'buy'>('all');
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
-  const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
+  const [selectedOccasions, setSelectedOccasions] = useState<string[]>(() => searchParams.getAll('occasion'));
+  const [selectedStyles, setSelectedStyles] = useState<string[]>(() => searchParams.getAll('style'));
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => searchParams.getAll('tag'));
+  const [selectedColors, setSelectedColors] = useState<string[]>(() => searchParams.getAll('color'));
   const [priceRange] = useState<[number, number]>([0, 15000000]);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [startDate, setStartDate] = useState('');
@@ -92,9 +92,22 @@ const ProductListing = () => {
     [category, categoryTree],
   );
 
+  const isAllProductsRoute = !category || category === 'all';
+
+  /**
+   * Loại váy (tag) như «Áo dài» thường ở danh mục riêng (vd. `ao-dai`), không nằm trong
+   * cây váy đầm mặc định — gửi cả category mở rộng + tag sẽ ra 0 kết quả.
+   */
+  const apiCategoryForQuery = useMemo(() => {
+    if (selectedTags.length > 0 && isAllProductsRoute) {
+      return undefined;
+    }
+    return apiCategorySlugs;
+  }, [apiCategorySlugs, isAllProductsRoute, selectedTags.length]);
+
   const listQueryArgs = useMemo(
     () => ({
-      category: apiCategorySlugs,
+      category: apiCategoryForQuery,
       page: currentPage,
       pageSize: productsPerPage,
       occasion: selectedOccasions.length ? [...selectedOccasions] : undefined,
@@ -112,7 +125,7 @@ const ProductListing = () => {
       ...mapListingSortToApiParams(sortBy),
     }),
     [
-      apiCategorySlugs,
+      apiCategoryForQuery,
       currentPage,
       productsPerPage,
       selectedOccasions,
@@ -145,7 +158,6 @@ const ProductListing = () => {
     setSelectedStyles((prev) => (stringArraysEqual(prev, sty) ? prev : sty));
     setSelectedColors((prev) => (stringArraysEqual(prev, col) ? prev : col));
     setSelectedTags((prev) => (stringArraysEqual(prev, tag) ? prev : tag));
-    urlHydratedRef.current = true;
   }, [searchParamsString, searchParams]);
 
   useEffect(() => {
@@ -188,7 +200,7 @@ const ProductListing = () => {
     () =>
       [
         category ?? '',
-        apiCategorySlugs?.join(',') ?? '',
+        apiCategoryForQuery?.join(',') ?? '',
         selectedOccasions.join(','),
         selectedStyles.join(','),
         selectedSizes.join(','),
@@ -205,7 +217,7 @@ const ProductListing = () => {
       ].join('|'),
     [
       category,
-      apiCategorySlugs,
+      apiCategoryForQuery,
       selectedOccasions,
       selectedStyles,
       selectedSizes,
