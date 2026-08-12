@@ -30,6 +30,7 @@ import {
   PRODUCT_LOAI_TAG_OPTIONS,
   sortLoaiTags,
 } from '@/modules/product/constants/product-loai-tags';
+import { buildProductColorFilterOptions } from '@/modules/product/constants/product-colors';
 import { ProductLoaiFilter, SelectedLoaiChips } from '@/components/ProductLoaiFilter';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -244,21 +245,11 @@ const ProductListing = () => {
     setSelectedTags([]);
   };
 
-  const colorOptions = useMemo(() => {
-    const set = new Set<string>();
-    const addColor = (raw: string) => {
-      const s = String(raw || '').trim();
-      if (s && s !== '—') set.add(s);
-    };
-    for (const p of products) {
-      for (const c of p.colors || []) addColor(c);
-    }
-    for (const p of baseProducts) {
-      for (const c of p.colors || []) addColor(c);
-    }
-    for (const c of selectedColors) addColor(c);
-    return [...set].sort((a, b) => a.localeCompare(b, 'vi'));
-  }, [baseProducts, selectedColors]);
+  /** Màu sắc — cùng danh sách chuẩn với admin. */
+  const colorOptions = useMemo(
+    () => buildProductColorFilterOptions(selectedColors),
+    [selectedColors],
+  );
 
   /** Loại váy cho quick filter — đủ danh sách chuẩn + tag từ API. */
   const quickLoaiOptions = useMemo(
