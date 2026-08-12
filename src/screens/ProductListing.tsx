@@ -3,12 +3,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { SlidersHorizontal, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { SlidersHorizontal, Calendar, ChevronLeft, ChevronRight, Search, Palette, Shirt } from 'lucide-react';
 import { products } from '../data/products';
 import ProductCard from '../components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useProductsQuery, useWebProductBrandsQuery, useWebProductTagsQuery } from '@/hooks/use-products-query';
 import { useWebCategoriesQuery } from '@/hooks/use-web-categories-query';
 import { flattenCategoryTreeForFilter, resolveProductListCategorySlugs, DRESSES_CATEGORY_ROOT_SLUG } from '@/libs/web-category-tree';
@@ -19,9 +26,14 @@ import {
 } from '@/libs/product-list-sort';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
-import { sortLoaiTags } from '@/modules/product/constants/product-loai-tags';
+import {
+  PRODUCT_LOAI_TAG_OPTIONS,
+  sortLoaiTags,
+} from '@/modules/product/constants/product-loai-tags';
 import { ProductLoaiFilter, SelectedLoaiChips } from '@/components/ProductLoaiFilter';
 import { useLanguage } from '../contexts/LanguageContext';
+
+const FILTER_ALL_VALUE = '__all__';
 
 function useOptionalSlugParam(): string | undefined {
   const params = useParams();
@@ -231,18 +243,38 @@ const ProductListing = () => {
 
   const colorOptions = useMemo(() => {
     const set = new Set<string>();
+    const addColor = (raw: string) => {
+      const s = String(raw || '').trim();
+      if (s && s !== '—') set.add(s);
+    };
+    for (const p of products) {
+      for (const c of p.colors || []) addColor(c);
+    }
     for (const p of baseProducts) {
-      for (const c of p.colors || []) {
-        const s = String(c || '').trim();
-        if (s) set.add(s);
-      }
+      for (const c of p.colors || []) addColor(c);
     }
-    for (const c of selectedColors) {
-      const s = String(c || '').trim();
-      if (s) set.add(s);
-    }
+    for (const c of selectedColors) addColor(c);
     return [...set].sort((a, b) => a.localeCompare(b, 'vi'));
   }, [baseProducts, selectedColors]);
+
+  /** Loại váy cho quick filter — đủ danh sách chuẩn + tag từ API. */
+  const quickLoaiOptions = useMemo(
+    () => sortLoaiTags([...PRODUCT_LOAI_TAG_OPTIONS, ...tagOptions]),
+    [tagOptions],
+  );
+
+  const quickColorValue =
+    selectedColors.length === 0 ? FILTER_ALL_VALUE : selectedColors[0];
+  const quickLoaiValue =
+    selectedTags.length === 0 ? FILTER_ALL_VALUE : selectedTags[0];
+
+  const handleQuickColorChange = (value: string) => {
+    setSelectedColors(value === FILTER_ALL_VALUE ? [] : [value]);
+  };
+
+  const handleQuickLoaiChange = (value: string) => {
+    setSelectedTags(value === FILTER_ALL_VALUE ? [] : [value]);
+  };
 
   const toggleColor = (c: string) => {
     setSelectedColors((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
@@ -789,101 +821,169 @@ const ProductListing = () => {
         {/* Main Content */}
         <div className="flex-1">
           {/* Tìm kiếm */}
-          <div className="mb-4">
+          <div className="mb-3">
             <ProductSearchBar />
           </div>
 
-          {/* Date Range & Sorting Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-200">
-            {/* Date Range Picker */}
-            <div className="w-full sm:w-auto flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-4 py-3">
-              <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="text-sm text-gray-700 focus:outline-none border-none w-full sm:w-auto"
-                  style={{
-                    colorScheme: 'light',
-                  }}
-                />
-                <span className="text-gray-400 flex-shrink-0">-</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  min={startDate}
-                  className="text-sm text-gray-700 focus:outline-none border-none w-full sm:w-auto"
-                  style={{
-                    colorScheme: 'light',
-                  }}
-                />
-              </div>
+          {/* Date Range */}
+          <div className="mb-3 flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3">
+            <Calendar className="h-5 w-5 flex-shrink-0 text-gray-400" />
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full border-none text-sm text-gray-700 focus:outline-none sm:w-auto"
+                style={{ colorScheme: 'light' }}
+              />
+              <span className="flex-shrink-0 text-gray-400">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                min={startDate}
+                className="w-full border-none text-sm text-gray-700 focus:outline-none sm:w-auto"
+                style={{ colorScheme: 'light' }}
+              />
             </div>
+          </div>
 
-            {/* Sorting Buttons */}
-            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-              <button
-                onClick={() => setSortBy('code-desc')}
-                className={`px-4 py-2.5 rounded-md text-sm border transition-colors ${
-                  sortBy === 'code-desc'
-                    ? 'border-[#b8465f] text-[#b8465f] bg-[#b8465f]/5'
-                    : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
+          {/* Quick filters: Màu sắc + Loại váy */}
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Select value={quickColorValue} onValueChange={handleQuickColorChange}>
+              <SelectTrigger
+                className={`h-auto w-full rounded-lg border bg-white px-4 py-3 text-sm shadow-none transition-colors hover:border-[#b8465f] focus:ring-2 focus:ring-[#b8465f]/20 data-[size=default]:h-auto ${
+                  selectedColors.length
+                    ? 'border-[#b8465f] bg-[#b8465f]/5 text-[#b8465f]'
+                    : 'border-gray-300 text-gray-700'
                 }`}
               >
-                {t('listing.sortCodeDesc')}
-              </button>
-              <button
-                onClick={() => setSortBy('newest')}
-                className={`px-4 py-2.5 rounded-md text-sm border transition-colors ${
-                  sortBy === 'newest'
-                    ? 'border-[#b8465f] text-[#b8465f] bg-[#b8465f]/5'
-                    : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
-                }`}
-              >
-                {t('listing.sortNewest')}
-              </button>
-              <button
-                onClick={() => setSortBy('popular')}
-                className={`px-4 py-2.5 rounded-md text-sm border transition-colors ${
-                  sortBy === 'popular'
-                    ? 'border-[#b8465f] text-[#b8465f] bg-[#b8465f]/5'
-                    : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
-                }`}
-              >
-                {t('listing.sortPopular')}
-              </button>
-              <button
-                onClick={() => setSortBy('price-asc')}
-                className={`px-4 py-2.5 rounded-md text-sm border transition-colors ${
-                  sortBy === 'price-asc'
-                    ? 'border-[#b8465f] text-[#b8465f] bg-[#b8465f]/5'
-                    : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
-                }`}
-              >
-                {t('listing.sortPriceAsc')}
-              </button>
-              <button
-                onClick={() => setSortBy('price-desc')}
-                className={`px-4 py-2.5 rounded-md text-sm border transition-colors ${
-                  sortBy === 'price-desc'
-                    ? 'border-[#b8465f] text-[#b8465f] bg-[#b8465f]/5'
-                    : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
-                }`}
-              >
-                {t('listing.sortPriceDesc')}
-              </button>
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <Palette
+                    className={`h-4 w-4 shrink-0 ${
+                      selectedColors.length ? 'text-[#b8465f]' : 'text-gray-400'
+                    }`}
+                  />
+                  <span className="truncate text-left">
+                    <span
+                      className={
+                        selectedColors.length ? 'text-[#b8465f]/80' : 'text-gray-500'
+                      }
+                    >
+                      {t('filter.color')}:{' '}
+                    </span>
+                    <SelectValue placeholder={t('filter.all')} />
+                  </span>
+                </span>
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value={FILTER_ALL_VALUE}>{t('filter.all')}</SelectItem>
+                {colorOptions.map((color) => (
+                  <SelectItem key={color} value={color}>
+                    {color}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              {/* Mobile Filter Button */}
-              <button
-                onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
-                className="lg:hidden flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-md hover:border-[#b8465f] transition-colors"
+            <Select value={quickLoaiValue} onValueChange={handleQuickLoaiChange}>
+              <SelectTrigger
+                className={`h-auto w-full rounded-lg border bg-white px-4 py-3 text-sm shadow-none transition-colors hover:border-[#b8465f] focus:ring-2 focus:ring-[#b8465f]/20 data-[size=default]:h-auto ${
+                  selectedTags.length
+                    ? 'border-[#b8465f] bg-[#b8465f]/5 text-[#b8465f]'
+                    : 'border-gray-300 text-gray-700'
+                }`}
               >
-                <SlidersHorizontal className="w-4 h-4" />
-                {t('listing.filterBtn')}
-              </button>
-            </div>
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <Shirt
+                    className={`h-4 w-4 shrink-0 ${
+                      selectedTags.length ? 'text-[#b8465f]' : 'text-gray-400'
+                    }`}
+                  />
+                  <span className="truncate text-left">
+                    <span
+                      className={
+                        selectedTags.length ? 'text-[#b8465f]/80' : 'text-gray-500'
+                      }
+                    >
+                      {t('filter.loai')}:{' '}
+                    </span>
+                    <SelectValue placeholder={t('filter.all')} />
+                  </span>
+                </span>
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value={FILTER_ALL_VALUE}>{t('filter.all')}</SelectItem>
+                {quickLoaiOptions.map((tag) => (
+                  <SelectItem key={tag} value={tag}>
+                    {tag}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sorting Bar */}
+          <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-gray-200 pb-6">
+            <button
+              onClick={() => setSortBy('code-desc')}
+              className={`rounded-md border px-4 py-2.5 text-sm transition-colors ${
+                sortBy === 'code-desc'
+                  ? 'border-[#b8465f] bg-[#b8465f]/5 text-[#b8465f]'
+                  : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
+              }`}
+            >
+              {t('listing.sortCodeDesc')}
+            </button>
+            <button
+              onClick={() => setSortBy('newest')}
+              className={`rounded-md border px-4 py-2.5 text-sm transition-colors ${
+                sortBy === 'newest'
+                  ? 'border-[#b8465f] bg-[#b8465f]/5 text-[#b8465f]'
+                  : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
+              }`}
+            >
+              {t('listing.sortNewest')}
+            </button>
+            <button
+              onClick={() => setSortBy('popular')}
+              className={`rounded-md border px-4 py-2.5 text-sm transition-colors ${
+                sortBy === 'popular'
+                  ? 'border-[#b8465f] bg-[#b8465f]/5 text-[#b8465f]'
+                  : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
+              }`}
+            >
+              {t('listing.sortPopular')}
+            </button>
+            <button
+              onClick={() => setSortBy('price-asc')}
+              className={`rounded-md border px-4 py-2.5 text-sm transition-colors ${
+                sortBy === 'price-asc'
+                  ? 'border-[#b8465f] bg-[#b8465f]/5 text-[#b8465f]'
+                  : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
+              }`}
+            >
+              {t('listing.sortPriceAsc')}
+            </button>
+            <button
+              onClick={() => setSortBy('price-desc')}
+              className={`rounded-md border px-4 py-2.5 text-sm transition-colors ${
+                sortBy === 'price-desc'
+                  ? 'border-[#b8465f] bg-[#b8465f]/5 text-[#b8465f]'
+                  : 'border-gray-300 text-gray-600 hover:border-[#b8465f]'
+              }`}
+            >
+              {t('listing.sortPriceDesc')}
+            </button>
+
+            {/* Mobile Filter Button */}
+            <button
+              onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
+              className="flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2.5 transition-colors hover:border-[#b8465f] lg:hidden"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              {t('listing.filterBtn')}
+            </button>
           </div>
 
           {/* Active loại filters */}
