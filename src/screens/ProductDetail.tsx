@@ -11,7 +11,7 @@ import RentalCalendar from '../components/RentalCalendar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProductDetailQuery, useProductRentalCalendarQuery, useSimilarProductsQuery } from '@/hooks/use-products-query';
-import { ymdInVn, defaultRentalCalendarQueryRange } from '@/libs/vn-date';
+import { ymdInVn, defaultRentalCalendarQueryRange, atHourInVn } from '@/libs/vn-date';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import ProductCard from '../components/ProductCard';
@@ -262,7 +262,7 @@ const ProductDetail = () => {
       price: actionType === 'buy' ? product.buyPrice : calculateRentalTotal(),
       ...(actionType === 'rent' && {
         deposit: product.deposit,
-        rentStartDate: rentStartDate?.toISOString(),
+        rentStartDate: rentStartDate ? atHourInVn(rentStartDate, 12).toISOString() : undefined,
         rentDuration: rentDuration,
       }),
     };
@@ -662,18 +662,20 @@ const ProductDetail = () => {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-700 font-medium">
-                        {language === 'vi' ? 'Ngày bắt đầu thuê' : language === 'en' ? 'Start date' : '시작 날짜'}:
+                        {language === 'vi' ? 'Nhận hàng sau' : language === 'en' ? 'Pickup after' : '수령 이후'}:
                       </span>
                       <span className="text-gray-900 font-semibold">
-                        {(rentDuration >= 2 ? '12:00' : '07:00')} - {rentStartDate.toLocaleDateString(
+                        12:00 - {rentStartDate.toLocaleDateString(
                           language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'ko-KR'
                         )}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-700 font-medium">{t('products.returnDate')}:</span>
+                      <span className="text-gray-700 font-medium">
+                        {language === 'vi' ? 'Trả hàng trước' : language === 'en' ? 'Return before' : '반납 이전'}:
+                      </span>
                       <span className="text-gray-900 font-semibold">
-                        {(rentDuration >= 2 ? '12:00' : '24:00')} - {returnDate.toLocaleDateString(
+                        12:00 - {returnDate.toLocaleDateString(
                           language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'ko-KR'
                         )}
                       </span>

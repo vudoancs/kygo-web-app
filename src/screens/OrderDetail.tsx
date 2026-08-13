@@ -2,10 +2,22 @@
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, AlertCircle, Package } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { useOrderDetailQuery } from '@/hooks/use-orders-query';
 import { isPublicApiConfigured } from '@/libs/env';
+import { OrderProductThumb } from '@/components/OrderProductThumb';
+
+const RAW_STATUS_LABEL: Record<string, string> = {
+  PENDING_CONFIRM: 'Chờ xác nhận',
+  CONFIRMED: 'Đã xác nhận',
+  WAITING_DELIVERY: 'Đã xác nhận',
+  DELIVERED: 'Đang thuê',
+  RETURNED: 'Đã trả',
+  WAITING_REFUND: 'Chờ hoàn cọc',
+  COMPLETED: 'Hoàn thành',
+  CANCELLED: 'Hủy',
+};
 
 const OrderDetail = () => {
   const params = useParams();
@@ -21,6 +33,12 @@ const OrderDetail = () => {
       currency: 'VND',
     }).format(price);
   };
+
+  const statusLabel = (() => {
+    const raw = String(orderQuery.data?.rawStatus || '').toUpperCase();
+    if (raw && RAW_STATUS_LABEL[raw]) return RAW_STATUS_LABEL[raw];
+    return orderQuery.data?.status || '—';
+  })();
 
   if (!user) {
     router.push(`/login?redirect=/my-orders/${encodeURIComponent(id || '')}`);
@@ -90,7 +108,7 @@ const OrderDetail = () => {
                 Mã đơn: <span className="font-semibold text-gray-900">{orderQuery.data.orderNumber}</span>
               </span>
               <span>
-                Trạng thái: <span className="font-semibold text-gray-900">{orderQuery.data.status}</span>
+                Trạng thái: <span className="font-semibold text-gray-900">{statusLabel}</span>
               </span>
               <span>
                 Ngày tạo:{' '}
@@ -102,14 +120,20 @@ const OrderDetail = () => {
           </div>
 
           <div className="p-6">
-            {orderQuery.data.rentalStartDate && orderQuery.data.rentalEndDate ? (
+            {orderQuery.data.rentalStartDate || orderQuery.data.rentalEndDate ? (
               <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
                 <div className="flex flex-wrap gap-x-6 gap-y-1">
                   <span>
-                    Thời gian thuê:{' '}
+                    Lịch thuê:{' '}
                     <span className="font-semibold text-gray-900">
-                      {new Date(orderQuery.data.rentalStartDate).toLocaleDateString('vi-VN')} -{' '}
-                      {new Date(orderQuery.data.rentalEndDate).toLocaleDateString('vi-VN')}
+                      Nhận {orderQuery.data.pickupTime || '12:00'}{' '}
+                      {orderQuery.data.rentalStartDate
+                        ? new Date(orderQuery.data.rentalStartDate).toLocaleDateString('vi-VN')
+                        : '—'}{' '}
+                      · Trả {orderQuery.data.returnTime || '12:00'}{' '}
+                      {orderQuery.data.rentalEndDate
+                        ? new Date(orderQuery.data.rentalEndDate).toLocaleDateString('vi-VN')
+                        : '—'}
                     </span>
                   </span>
                   {orderQuery.data.venue ? (
@@ -129,12 +153,26 @@ const OrderDetail = () => {
             <div className="space-y-4">
               {orderQuery.data.lines.map((line) => (
                 <div key={line.productId} className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                    <Package className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">{line.name}</p>
-                    <p className="text-sm text-gray-600">Số lượng: {line.quantity}</p>
+                  <OrderProductThumb
+                    productId={line.productId}
+                    name={line.name}
+                    images={line.images}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        window.open(
+                          `/product/${encodeURIComponent(line.productId)}`,
+                          '_blank',
+                          'noopener,noreferrer',
+                        )
+                      }
+                      className="text-left font-semibold text-gray-900 hover:text-[#b8465f] transition-colors"
+                    >
+                      {line.name}
+                    </button>
+                    <p className="text-sm text-gray-600 mt-1">Số lượng: {line.quantity}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-900">{formatPrice(line.unitPrice)}</p>
@@ -158,4 +196,3 @@ const OrderDetail = () => {
 };
 
 export default OrderDetail;
-

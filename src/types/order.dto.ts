@@ -1,10 +1,22 @@
 export type OrderStatus = 'pending' | 'paid' | 'shipped' | 'completed' | 'cancelled';
 
+/** Trạng thái gốc ERP — đồng bộ kygo-erp-api OrderStatus */
+export type ErpOrderStatus =
+  | 'PENDING_CONFIRM'
+  | 'CONFIRMED'
+  | 'WAITING_DELIVERY'
+  | 'DELIVERED'
+  | 'RETURNED'
+  | 'WAITING_REFUND'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
 export interface OrderLineDto {
   productId: string;
   name: string;
   quantity: number;
   unitPrice: number;
+  images?: string[];
 }
 
 export interface OrderDto {
@@ -20,5 +32,7 @@ export interface OrderDto {
   createdAt: string;
   rentalStartDate?: string;
   rentalEndDate?: string;
+  pickupTime?: string;
+  returnTime?: string;
   venue?: string;
 }

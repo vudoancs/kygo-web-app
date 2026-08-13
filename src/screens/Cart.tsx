@@ -93,8 +93,8 @@ const Cart = () => {
                 {item.type === 'rent' && item.rentStartDate && item.rentDuration && (() => {
                   const startDate = new Date(item.rentStartDate);
                   const duration = item.rentDuration;
-                  const pickupTime = '10:00';
-                  const returnTime = '10:00'; // Luôn trả vào 10:00
+                  const pickupTime = '12:00';
+                  const returnTime = '12:00';
                   // Logic ngày: 1 ngày => trả cùng ngày; N ngày => tính từ ngày bắt đầu thuê + (N - 1) ngày.
                   const returnDate = new Date(
                     startDate.getTime() + Math.max(duration - 1, 0) * 24 * 60 * 60 * 1000,

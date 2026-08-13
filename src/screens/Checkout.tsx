@@ -8,6 +8,10 @@ import { checkoutWeb } from '@/services/orders.service';
 import { getErrorMessage } from '@/services/http/errors';
 import { isPublicApiConfigured } from '@/libs/env';
 import { ProductImage } from '@/components/ProductImage';
+import {
+  OrderSuccessDialog,
+  type OrderSuccessSummary,
+} from '@/components/OrderSuccessDialog';
 
 const Checkout = () => {
   const { cart, user, clearCart } = useAppContext();
@@ -25,13 +29,15 @@ const Checkout = () => {
     notes: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successSummary, setSuccessSummary] = useState<OrderSuccessSummary | null>(null);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty (không redirect khi đang hiện popup thành công)
   useEffect(() => {
-    if (cart.length === 0) {
+    if (cart.length === 0 && !successOpen) {
       router.push('/cart');
     }
-  }, [cart.length, router]);
+  }, [cart.length, router, successOpen]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -53,6 +59,12 @@ const Checkout = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const goToMyOrders = () => {
+    setSuccessOpen(false);
+    setSuccessSummary(null);
+    router.push('/my-orders');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +90,14 @@ const Checkout = () => {
 
     setSubmitting(true);
     try {
+      const snapshot: OrderSuccessSummary = {
+        items: cart.map((item) => ({ ...item })),
+        deliveryMethod,
+        address: formData.address,
+        district: formData.district,
+        city: formData.city,
+      };
+
       await checkoutWeb({
         items: cart.map((item) => ({
           productId: item.productId,
@@ -95,9 +115,10 @@ const Checkout = () => {
         city: formData.city || undefined,
         district: formData.district || undefined,
       });
-      alert('Đặt hàng thành công! Cảm ơn bạn đã tin tưởng Kygo Prom.');
+
+      setSuccessSummary(snapshot);
+      setSuccessOpen(true);
       clearCart();
-      router.push('/my-orders');
     } catch (err) {
       alert(getErrorMessage(err));
     } finally {
@@ -121,6 +142,19 @@ const Checkout = () => {
             Đăng nhập ngay
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (successOpen) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <OrderSuccessDialog
+          open={successOpen}
+          summary={successSummary}
+          onViewOrders={goToMyOrders}
+          onThanks={goToMyOrders}
+        />
       </div>
     );
   }

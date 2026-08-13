@@ -10,6 +10,20 @@ export function ymdInVn(date: Date = new Date()): string {
   }).format(date);
 }
 
+/**
+ * Tạo Date đúng giờ theo múi giờ Việt Nam (UTC+7).
+ * Ví dụ: atHourInVn(date, 12) → 12:00 ngày đó (VN).
+ */
+export function atHourInVn(date: Date | string, hour: number, minute = 0): Date {
+  const ymd =
+    typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      ? date
+      : ymdInVn(typeof date === 'string' ? new Date(date) : date);
+  const hh = String(hour).padStart(2, '0');
+  const mm = String(minute).padStart(2, '0');
+  return new Date(`${ymd}T${hh}:${mm}:00+07:00`);
+}
+
 /** Khoảng xem lịch thuê: đầu tháng hiện tại (VN) → +12 tháng. */
 export function defaultRentalCalendarQueryRange(): { fromDate: string; toDate: string } {
   const todayYmd = ymdInVn();

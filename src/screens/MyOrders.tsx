@@ -2,18 +2,105 @@
 
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package, Calendar, CreditCard, ChevronRight, User as UserIcon, AlertCircle } from 'lucide-react';
+import { Package, Calendar, MapPin, ChevronRight, User as UserIcon, AlertCircle } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { useMyOrdersQuery } from '@/hooks/use-orders-query';
 import { isPublicApiConfigured } from '@/libs/env';
-import type { OrderDto, OrderStatus } from '@/types/order.dto';
+import type { OrderDto } from '@/types/order.dto';
+import { OrderProductThumb } from '@/components/OrderProductThumb';
 
-type OrderTabId = 'all' | 'waiting_receive' | 'waiting_return' | 'waiting_refund' | 'completed' | 'cancelled';
+type OrderTabId =
+  | 'all'
+  | 'pending_confirm'
+  | 'confirmed'
+  | 'renting'
+  | 'returned'
+  | 'waiting_refund'
+  | 'completed'
+  | 'cancelled';
+
+const RAW_STATUS_LABEL: Record<string, { label: string; color: string }> = {
+  PENDING_CONFIRM: { label: 'Chờ xác nhận', color: 'bg-amber-100 text-amber-800' },
+  CONFIRMED: { label: 'Đã xác nhận', color: 'bg-blue-100 text-blue-800' },
+  WAITING_DELIVERY: { label: 'Đã xác nhận', color: 'bg-blue-100 text-blue-800' },
+  DELIVERED: { label: 'Đang thuê', color: 'bg-purple-100 text-purple-800' },
+  RETURNED: { label: 'Đã trả', color: 'bg-indigo-100 text-indigo-800' },
+  WAITING_REFUND: { label: 'Chờ hoàn cọc', color: 'bg-orange-100 text-orange-800' },
+  COMPLETED: { label: 'Hoàn thành', color: 'bg-emerald-100 text-emerald-800' },
+  CANCELLED: { label: 'Hủy', color: 'bg-red-100 text-red-800' },
+};
+
+function getRawStatus(order: OrderDto): string {
+  return String(order.rawStatus || '').toUpperCase();
+}
+
+function getStatusMeta(order: OrderDto): { label: string; color: string } {
+  const raw = getRawStatus(order);
+  if (raw && RAW_STATUS_LABEL[raw]) return RAW_STATUS_LABEL[raw];
+
+  const fallback: Record<string, { label: string; color: string }> = {
+    pending: { label: 'Chờ xác nhận', color: 'bg-amber-100 text-amber-800' },
+    paid: { label: 'Đã xác nhận', color: 'bg-blue-100 text-blue-800' },
+    shipped: { label: 'Đang thuê', color: 'bg-purple-100 text-purple-800' },
+    completed: { label: 'Hoàn thành', color: 'bg-emerald-100 text-emerald-800' },
+    cancelled: { label: 'Hủy', color: 'bg-red-100 text-red-800' },
+  };
+  return fallback[order.status] || { label: 'Đang xử lý', color: 'bg-gray-100 text-gray-700' };
+}
+
+function matchesTab(order: OrderDto, tab: OrderTabId): boolean {
+  if (tab === 'all') return true;
+  const raw = getRawStatus(order);
+
+  switch (tab) {
+    case 'pending_confirm':
+      return raw === 'PENDING_CONFIRM' || (!raw && order.status === 'pending');
+    case 'confirmed':
+      return raw === 'CONFIRMED' || raw === 'WAITING_DELIVERY';
+    case 'renting':
+      return raw === 'DELIVERED';
+    case 'returned':
+      return raw === 'RETURNED';
+    case 'waiting_refund':
+      return raw === 'WAITING_REFUND';
+    case 'completed':
+      return raw === 'COMPLETED' || order.status === 'completed';
+    case 'cancelled':
+      return raw === 'CANCELLED' || order.status === 'cancelled';
+    default:
+      return true;
+  }
+}
+
+function formatPrice(price: number) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(price);
+}
+
+function formatDate(value?: string) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('vi-VN');
+}
+
+function formatRentalSchedule(order: OrderDto): string | null {
+  if (!order.rentalStartDate && !order.rentalEndDate) return null;
+  const start = formatDate(order.rentalStartDate);
+  const end = formatDate(order.rentalEndDate);
+  const pickup = order.pickupTime || '12:00';
+  const ret = order.returnTime || '12:00';
+  if (start === end) {
+    return `${pickup} ${start} → ${ret} ${end}`;
+  }
+  return `Nhận ${pickup} ${start} · Trả ${ret} ${end}`;
+}
 
 const MyOrders = () => {
   const { user } = useAppContext();
   const router = useRouter();
-  const [, setSelectedOrder] = useState<OrderDto | null>(null);
   const [activeTab, setActiveTab] = useState<OrderTabId>('all');
 
   const myOrdersQuery = useMyOrdersQuery();
@@ -23,66 +110,24 @@ const MyOrders = () => {
     return myOrdersQuery.data ?? [];
   }, [myOrdersQuery.data]);
 
-  const filteredOrders = useMemo((): OrderDto[] => {
-    if (activeTab === 'all') return orders;
-    const raw = (o: OrderDto) => String(o.rawStatus || '').toUpperCase();
-
-    if (activeTab === 'waiting_receive') {
-      return orders.filter((o) => ['PENDING_CONFIRM', 'CONFIRMED', 'WAITING_DELIVERY'].includes(raw(o)));
-    }
-    if (activeTab === 'waiting_return') {
-      return orders.filter((o) => raw(o) === 'DELIVERED');
-    }
-    if (activeTab === 'waiting_refund') {
-      return orders.filter((o) => raw(o) === 'WAITING_REFUND');
-    }
-    if (activeTab === 'completed') {
-      return orders.filter((o) => raw(o) === 'COMPLETED' || o.status === 'completed');
-    }
-    if (activeTab === 'cancelled') {
-      return orders.filter((o) => raw(o) === 'CANCELLED' || o.status === 'cancelled');
-    }
-    return orders;
-  }, [activeTab, orders]);
+  const filteredOrders = useMemo(
+    () => orders.filter((order) => matchesTab(order, activeTab)),
+    [activeTab, orders],
+  );
 
   const tabItems = useMemo(() => {
-    const raw = (o: OrderDto) => String(o.rawStatus || '').toUpperCase();
-    const counts = {
-      all: orders.length,
-      waiting_receive: orders.filter((o) => ['PENDING_CONFIRM', 'CONFIRMED', 'WAITING_DELIVERY'].includes(raw(o))).length,
-      waiting_return: orders.filter((o) => raw(o) === 'DELIVERED').length,
-      waiting_refund: orders.filter((o) => raw(o) === 'WAITING_REFUND').length,
-      completed: orders.filter((o) => raw(o) === 'COMPLETED' || o.status === 'completed').length,
-      cancelled: orders.filter((o) => raw(o) === 'CANCELLED' || o.status === 'cancelled').length,
-    };
-
+    const count = (tab: OrderTabId) => orders.filter((o) => matchesTab(o, tab)).length;
     return [
-      { id: 'all' as const, label: 'Tất cả', count: counts.all },
-      { id: 'waiting_receive' as const, label: 'Chờ nhận hàng', count: counts.waiting_receive },
-      { id: 'waiting_return' as const, label: 'Chờ trả hàng', count: counts.waiting_return },
-      { id: 'waiting_refund' as const, label: 'Chờ hoàn cọc', count: counts.waiting_refund },
-      { id: 'completed' as const, label: 'Hoàn thành', count: counts.completed },
-      { id: 'cancelled' as const, label: 'Hủy', count: counts.cancelled },
+      { id: 'all' as const, label: 'Tất cả', count: count('all') },
+      { id: 'pending_confirm' as const, label: 'Chờ xác nhận', count: count('pending_confirm') },
+      { id: 'confirmed' as const, label: 'Đã xác nhận', count: count('confirmed') },
+      { id: 'renting' as const, label: 'Đang thuê', count: count('renting') },
+      { id: 'returned' as const, label: 'Đã trả', count: count('returned') },
+      { id: 'waiting_refund' as const, label: 'Chờ hoàn cọc', count: count('waiting_refund') },
+      { id: 'completed' as const, label: 'Hoàn thành', count: count('completed') },
+      { id: 'cancelled' as const, label: 'Hủy', count: count('cancelled') },
     ];
   }, [orders]);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
-  };
-
-  const getStatusLabel = (status: OrderStatus) => {
-    const statusMap: Record<OrderStatus, { label: string; color: string }> = {
-      pending: { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-800' },
-      paid: { label: 'Đã thanh toán', color: 'bg-blue-100 text-blue-800' },
-      shipped: { label: 'Đang giao', color: 'bg-purple-100 text-purple-800' },
-      completed: { label: 'Hoàn tất', color: 'bg-gray-100 text-gray-800' },
-      cancelled: { label: 'Đã hủy', color: 'bg-red-100 text-red-800' },
-    };
-    return statusMap[status];
-  };
 
   if (!user) {
     return (
@@ -200,94 +245,117 @@ const MyOrders = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
-              {filteredOrders.map((order) => (
-            <div
-              key={order.id}
-              className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              {/* Order Header */}
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                  <div>
-                    <p className="text-sm text-gray-600">Mã đơn hàng</p>
-                    <p className="font-semibold text-gray-900">{order.orderNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Ngày đặt</p>
-                    <p className="font-medium text-gray-900">
-                      {new Date(order.createdAt).toLocaleDateString('vi-VN')}
-                    </p>
-                  </div>
-                  <div>
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                        getStatusLabel(order.status).color
-                      }`}
-                    >
-                      {getStatusLabel(order.status).label}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Tổng tiền</p>
-                  <p className="font-bold text-lg text-[#b8465f]">{formatPrice(order.total)}</p>
-                </div>
-              </div>
+              {filteredOrders.map((order) => {
+                const statusMeta = getStatusMeta(order);
+                const rentalSchedule = formatRentalSchedule(order);
 
-              {/* Order Body */}
-              <div className="p-6">
-                {/* Products */}
-                <div className="space-y-4 mb-6">
-                  {order.lines.map((line) => (
-                    <div key={`${order.id}-${line.productId}`} className="flex gap-4">
-                      <div className="w-20 h-20 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                        <Package className="w-6 h-6 text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-1">{line.name}</h3>
-                        <p className="text-sm text-gray-600">Số lượng: {line.quantity}</p>
+                return (
+                  <div
+                    key={order.id}
+                    className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                  >
+                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex flex-wrap items-center gap-6">
+                        <div>
+                          <p className="text-sm text-gray-600">Mã đơn hàng</p>
+                          <p className="font-semibold text-gray-900">{order.orderNumber}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">Ngày đặt</p>
+                          <p className="font-medium text-gray-900">
+                            {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                          </p>
+                        </div>
+                        <div>
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusMeta.color}`}
+                          >
+                            {statusMeta.label}
+                          </span>
+                        </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-gray-900">{formatPrice(line.unitPrice)}</p>
+                        <p className="text-sm text-gray-600">Tổng tiền</p>
+                        <p className="font-bold text-lg text-[#b8465f]">{formatPrice(order.total)}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
 
-                {/* Order Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-start gap-3">
-                    <CreditCard className="w-5 h-5 text-[#b8465f] mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Thanh toán</p>
-                      <p className="text-sm text-gray-600">Theo thông tin đơn hàng</p>
+                    <div className="p-6">
+                      <div className="space-y-4 mb-6">
+                        {order.lines.map((line) => (
+                          <div key={`${order.id}-${line.productId}`} className="flex gap-4">
+                            <OrderProductThumb
+                              productId={line.productId}
+                              name={line.name}
+                              images={line.images}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  window.open(
+                                    `/product/${encodeURIComponent(line.productId)}`,
+                                    '_blank',
+                                    'noopener,noreferrer',
+                                  )
+                                }
+                                className="text-left font-semibold text-gray-900 hover:text-[#b8465f] transition-colors"
+                              >
+                                {line.name}
+                              </button>
+                              <p className="text-sm text-gray-600 mt-1">Số lượng: {line.quantity}</p>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="font-semibold text-gray-900">{formatPrice(line.unitPrice)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                        {rentalSchedule ? (
+                          <div className="flex items-start gap-3">
+                            <Calendar className="w-5 h-5 text-[#b8465f] mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Lịch thuê</p>
+                              <p className="text-sm text-gray-600">{rentalSchedule}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-3">
+                            <Calendar className="w-5 h-5 text-[#b8465f] mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Thời gian đặt</p>
+                              <p className="text-sm text-gray-600">
+                                {new Date(order.createdAt).toLocaleString('vi-VN')}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {order.venue ? (
+                          <div className="flex items-start gap-3">
+                            <MapPin className="w-5 h-5 text-[#b8465f] mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Nhận hàng</p>
+                              <p className="text-sm text-gray-600">{order.venue}</p>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-6 pt-4 border-t border-gray-200 flex gap-3">
+                        <button
+                          onClick={() => router.push(`/my-orders/${order.orderNumber}`)}
+                          className="flex-1 border border-[#b8465f] text-[#b8465f] py-2 px-4 rounded-lg hover:bg-rose-50 transition-colors font-medium flex items-center justify-center gap-2"
+                        >
+                          Xem chi tiết <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-[#b8465f] mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Thời gian</p>
-                      <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleString('vi-VN')}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="mt-6 pt-4 border-t border-gray-200 flex gap-3">
-                  <button
-                    onClick={() => {
-                      setSelectedOrder(order);
-                      router.push(`/my-orders/${order.orderNumber}`);
-                    }}
-                    className="flex-1 border border-[#b8465f] text-[#b8465f] py-2 px-4 rounded-lg hover:bg-rose-50 transition-colors font-medium flex items-center justify-center gap-2"
-                  >
-                    Xem chi tiết <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
