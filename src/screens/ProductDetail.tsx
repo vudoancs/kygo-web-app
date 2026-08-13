@@ -11,7 +11,7 @@ import RentalCalendar from '../components/RentalCalendar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProductDetailQuery, useProductRentalCalendarQuery, useSimilarProductsQuery } from '@/hooks/use-products-query';
-import { ymdInVn, defaultRentalCalendarQueryRange, atHourInVn } from '@/libs/vn-date';
+import { ymdInVn, defaultRentalCalendarQueryRange, toUtcMidnightIsoFromVnDate, addDaysToYmd } from '@/libs/vn-date';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import ProductCard from '../components/ProductCard';
@@ -260,11 +260,18 @@ const ProductDetail = () => {
       image: resolveProductImage(product.image),
       size: selectedSize,
       price: actionType === 'buy' ? product.buyPrice : calculateRentalTotal(),
-      ...(actionType === 'rent' && {
-        deposit: product.deposit,
-        rentStartDate: rentStartDate ? atHourInVn(rentStartDate, 12).toISOString() : undefined,
-        rentDuration: rentDuration,
-      }),
+      ...(actionType === 'rent' && rentStartDate
+        ? (() => {
+            const startYmd = ymdInVn(rentStartDate);
+            const endYmd = addDaysToYmd(startYmd, Math.max(rentDuration - 1, 0));
+            return {
+              deposit: product.deposit,
+              rentStartDate: toUtcMidnightIsoFromVnDate(startYmd),
+              rentEndDate: toUtcMidnightIsoFromVnDate(endYmd),
+              rentDuration,
+            };
+          })()
+        : {}),
     };
 
     addToCart(cartItem);

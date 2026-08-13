@@ -24,6 +24,26 @@ export function atHourInVn(date: Date | string, hour: number, minute = 0): Date 
   return new Date(`${ymd}T${hh}:${mm}:00+07:00`);
 }
 
+/**
+ * Ngày lịch VN → ISO midnight UTC (giống admin):
+ * `2026-08-07` → `2026-08-07T00:00:00.000Z`
+ * Giờ nhận/trả 12:00 lưu riêng ở pickupTime/returnTime.
+ */
+export function toUtcMidnightIsoFromVnDate(date: Date | string): string {
+  const ymd =
+    typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)
+      ? date.slice(0, 10)
+      : ymdInVn(typeof date === 'string' ? new Date(date) : date);
+  return `${ymd}T00:00:00.000Z`;
+}
+
+/** Cộng N ngày vào YYYY-MM-DD (lịch civil). */
+export function addDaysToYmd(ymd: string, days: number): string {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return dt.toISOString().slice(0, 10);
+}
+
 /** Khoảng xem lịch thuê: đầu tháng hiện tại (VN) → +12 tháng. */
 export function defaultRentalCalendarQueryRange(): { fromDate: string; toDate: string } {
   const todayYmd = ymdInVn();

@@ -95,10 +95,11 @@ const Cart = () => {
                   const duration = item.rentDuration;
                   const pickupTime = '12:00';
                   const returnTime = '12:00';
-                  // Logic ngày: 1 ngày => trả cùng ngày; N ngày => tính từ ngày bắt đầu thuê + (N - 1) ngày.
-                  const returnDate = new Date(
-                    startDate.getTime() + Math.max(duration - 1, 0) * 24 * 60 * 60 * 1000,
-                  );
+                  const returnDate = item.rentEndDate
+                    ? new Date(item.rentEndDate)
+                    : new Date(
+                        startDate.getTime() + Math.max(duration - 1, 0) * 24 * 60 * 60 * 1000,
+                      );
                   
                   return (
                     <div className="mt-3 p-3 bg-rose-50 rounded-lg space-y-2 text-sm">

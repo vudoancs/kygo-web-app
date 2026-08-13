@@ -7,7 +7,10 @@ export type WebCheckoutItemPayload = {
   quantity: number;
   type: 'rent' | 'buy';
   rentStartDate?: string;
+  rentEndDate?: string;
   rentDuration?: number;
+  pickupTime?: string;
+  returnTime?: string;
 };
 
 export type WebCheckoutPayload = {

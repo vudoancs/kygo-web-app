@@ -104,7 +104,13 @@ const Checkout = () => {
           quantity: 1,
           type: item.type,
           ...(item.type === 'rent' && item.rentStartDate && item.rentDuration
-            ? { rentStartDate: item.rentStartDate, rentDuration: item.rentDuration }
+            ? {
+                rentStartDate: item.rentStartDate,
+                rentEndDate: item.rentEndDate,
+                rentDuration: item.rentDuration,
+                pickupTime: '12:00',
+                returnTime: '12:00',
+              }
             : {}),
         })),
         notes: formData.notes || undefined,
