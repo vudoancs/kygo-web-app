@@ -6,6 +6,8 @@ export type WebCheckoutItemPayload = {
   productId: string;
   quantity: number;
   type: 'rent' | 'buy';
+  /** Đơn giá đã hiển thị trên web (khớp giỏ hàng) */
+  unitPrice: number;
   rentStartDate?: string;
   rentEndDate?: string;
   rentDuration?: number;

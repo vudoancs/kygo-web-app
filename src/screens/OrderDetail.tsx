@@ -246,7 +246,12 @@ const OrderDetail = () => {
                     <div className="text-right">
                       <p className="font-semibold text-gray-900">{formatPrice(line.unitPrice)}</p>
                       <p className="text-sm text-gray-600">
-                        Thành tiền: {formatPrice(line.unitPrice * line.quantity)}
+                        Thành tiền:{' '}
+                        {formatPrice(
+                          line.lineTotal != null
+                            ? line.lineTotal
+                            : line.unitPrice * line.quantity,
+                        )}
                       </p>
                     </div>
                   </div>

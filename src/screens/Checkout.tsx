@@ -105,6 +105,7 @@ const Checkout = () => {
           productId: item.productId,
           quantity: 1,
           type: item.type,
+          unitPrice: Math.max(0, Number(item.price) || 0),
           ...(item.type === 'rent' && item.rentStartDate && item.rentDuration
             ? {
                 rentStartDate: item.rentStartDate,

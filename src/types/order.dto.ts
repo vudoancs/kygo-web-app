@@ -19,6 +19,8 @@ export interface OrderLineDto {
   name: string;
   quantity: number;
   unitPrice: number;
+  /** Thành tiền dòng */
+  lineTotal?: number;
   type?: OrderLineType;
   images?: string[];
 }

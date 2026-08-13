@@ -463,6 +463,16 @@ const MyOrders = () => {
                                 <p className="font-semibold text-gray-900">
                                   {formatPrice(line.unitPrice)}
                                 </p>
+                                {line.quantity > 1 || (line.lineTotal != null && line.lineTotal !== line.unitPrice) ? (
+                                  <p className="text-sm text-gray-600">
+                                    Thành tiền:{' '}
+                                    {formatPrice(
+                                      line.lineTotal != null
+                                        ? line.lineTotal
+                                        : line.unitPrice * line.quantity,
+                                    )}
+                                  </p>
+                                ) : null}
                               </div>
                             </div>
                           );
