@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreditCard, Wallet, Building2, MapPin, User as UserIcon } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
@@ -17,7 +17,7 @@ const Checkout = () => {
   const { cart, user, clearCart } = useAppContext();
   const router = useRouter();
 
-  const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
+  const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('pickup');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'transfer' | 'online'>('cod');
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -31,10 +31,11 @@ const Checkout = () => {
   const [submitting, setSubmitting] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [successSummary, setSuccessSummary] = useState<OrderSuccessSummary | null>(null);
+  const leaveAfterSuccessRef = useRef(false);
 
-  // Redirect if cart is empty (không redirect khi đang hiện popup thành công)
+  // Redirect if cart is empty (không redirect khi đang hiện popup / đang chuyển sang my-orders)
   useEffect(() => {
-    if (cart.length === 0 && !successOpen) {
+    if (cart.length === 0 && !successOpen && !leaveAfterSuccessRef.current) {
       router.push('/cart');
     }
   }, [cart.length, router, successOpen]);
@@ -62,6 +63,7 @@ const Checkout = () => {
   };
 
   const goToMyOrders = () => {
+    leaveAfterSuccessRef.current = true;
     setSuccessOpen(false);
     setSuccessSummary(null);
     router.push('/my-orders');
