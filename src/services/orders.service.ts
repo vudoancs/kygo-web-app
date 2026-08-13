@@ -15,6 +15,7 @@ export type WebCheckoutPayload = {
   notes?: string;
   deliveryMethod?: 'delivery' | 'pickup';
   phone?: string;
+  name?: string;
   address?: string;
   city?: string;
   district?: string;
@@ -34,7 +35,7 @@ export async function fetchOrderById(id: string): Promise<OrderDto> {
   });
 }
 
-/** POST /web/orders/checkout — cần JWT + Customer ERP trùng email đăng nhập. */
+/** POST /web/orders/checkout — JWT; backend tự tìm/tạo Customer ERP theo email. */
 export async function checkoutWeb(body: WebCheckoutPayload): Promise<OrderDto> {
   const raw = await httpRequestOrThrow<unknown>('/web/orders/checkout', {
     method: 'POST',

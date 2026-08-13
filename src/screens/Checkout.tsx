@@ -90,6 +90,7 @@ const Checkout = () => {
         notes: formData.notes || undefined,
         deliveryMethod,
         phone: formData.phone || undefined,
+        name: formData.name || undefined,
         address: formData.address || undefined,
         city: formData.city || undefined,
         district: formData.district || undefined,
