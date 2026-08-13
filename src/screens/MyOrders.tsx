@@ -16,13 +16,44 @@ import {
 import { useAppContext } from '@/modules/app-state';
 import { useMyOrdersQuery } from '@/hooks/use-orders-query';
 import { isPublicApiConfigured } from '@/libs/env';
-import type { OrderDto } from '@/types/order.dto';
+import type { OrderDto, OrderKind, OrderLineType } from '@/types/order.dto';
 import { OrderProductThumb } from '@/components/OrderProductThumb';
 import { ShopContactButtons } from '@/components/ShopContactButtons';
 import {
   OrderPaymentDialog,
   type OrderPaymentMode,
 } from '@/components/OrderPaymentDialog';
+
+function resolveOrderKind(order: OrderDto): OrderKind {
+  if (order.orderKind) return order.orderKind;
+  const hasBuy = order.lines.some((l) => l.type === 'buy');
+  const hasRent = order.lines.some((l) => l.type !== 'buy');
+  if (hasBuy && hasRent) return 'mixed';
+  if (hasBuy) return 'buy';
+  return 'rent';
+}
+
+function resolveLineType(type: OrderLineType | undefined, orderKind: OrderKind): OrderLineType {
+  if (type === 'buy' || type === 'rent') return type;
+  return orderKind === 'buy' ? 'buy' : 'rent';
+}
+
+function orderKindMeta(kind: OrderKind): { label: string; className: string } {
+  if (kind === 'buy') {
+    return { label: 'Đơn mua', className: 'bg-sky-100 text-sky-800' };
+  }
+  if (kind === 'mixed') {
+    return { label: 'Thuê + Mua', className: 'bg-violet-100 text-violet-800' };
+  }
+  return { label: 'Đơn thuê', className: 'bg-amber-100 text-amber-800' };
+}
+
+function lineTypeMeta(type: OrderLineType): { label: string; className: string } {
+  if (type === 'buy') {
+    return { label: 'Mua', className: 'bg-sky-50 text-sky-700 border-sky-200' };
+  }
+  return { label: 'Thuê', className: 'bg-amber-50 text-amber-800 border-amber-200' };
+}
 
 type OrderTabId =
   | 'all'
@@ -132,6 +163,8 @@ function formatDate(value?: string) {
 }
 
 function formatRentalSchedule(order: OrderDto): string | null {
+  const kind = resolveOrderKind(order);
+  if (kind === 'buy') return null;
   if (!order.rentalStartDate && !order.rentalEndDate) return null;
   const start = formatDate(order.rentalStartDate);
   const end = formatDate(order.rentalEndDate);
@@ -309,6 +342,8 @@ const MyOrders = () => {
             <div className="grid grid-cols-1 gap-6">
               {filteredOrders.map((order) => {
                 const statusMeta = getStatusMeta(order);
+                const kind = resolveOrderKind(order);
+                const kindMeta = orderKindMeta(kind);
                 const rentalSchedule = formatRentalSchedule(order);
                 const paidAmount = getPaidAmount(order);
                 const remainingAmount = getRemainingAmount(order);
@@ -353,7 +388,12 @@ const MyOrders = () => {
                             {new Date(order.createdAt).toLocaleDateString('vi-VN')}
                           </p>
                         </div>
-                        <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${kindMeta.className}`}
+                          >
+                            {kindMeta.label}
+                          </span>
                           <span
                             className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusMeta.color}`}
                           >
@@ -386,34 +426,47 @@ const MyOrders = () => {
 
                     <div className="p-6">
                       <div className="space-y-4 mb-6">
-                        {order.lines.map((line) => (
-                          <div key={`${order.id}-${line.productId}`} className="flex gap-4">
-                            <OrderProductThumb
-                              productId={line.productId}
-                              name={line.name}
-                              images={line.images}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  window.open(
-                                    `/product/${encodeURIComponent(line.productId)}`,
-                                    '_blank',
-                                    'noopener,noreferrer',
-                                  )
-                                }
-                                className="text-left font-semibold text-gray-900 hover:text-[#b8465f] transition-colors"
-                              >
-                                {line.name}
-                              </button>
-                              <p className="text-sm text-gray-600 mt-1">Số lượng: {line.quantity}</p>
+                        {order.lines.map((line) => {
+                          const lineType = resolveLineType(line.type, kind);
+                          const lineMeta = lineTypeMeta(lineType);
+                          return (
+                            <div key={`${order.id}-${line.productId}`} className="flex gap-4">
+                              <OrderProductThumb
+                                productId={line.productId}
+                                name={line.name}
+                                images={line.images}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      window.open(
+                                        `/product/${encodeURIComponent(line.productId)}`,
+                                        '_blank',
+                                        'noopener,noreferrer',
+                                      )
+                                    }
+                                    className="text-left font-semibold text-gray-900 hover:text-[#b8465f] transition-colors"
+                                  >
+                                    {line.name}
+                                  </button>
+                                  <span
+                                    className={`inline-flex rounded border px-1.5 py-0.5 text-[11px] font-medium ${lineMeta.className}`}
+                                  >
+                                    {lineMeta.label}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">Số lượng: {line.quantity}</p>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className="font-semibold text-gray-900">
+                                  {formatPrice(line.unitPrice)}
+                                </p>
+                              </div>
                             </div>
-                            <div className="text-right flex-shrink-0">
-                              <p className="font-semibold text-gray-900">{formatPrice(line.unitPrice)}</p>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
@@ -452,9 +505,13 @@ const MyOrders = () => {
                           <div className="flex items-start gap-3">
                             <Calendar className="w-5 h-5 text-[#b8465f] mt-0.5 flex-shrink-0" />
                             <div>
-                              <p className="text-sm font-medium text-gray-900">Thời gian đặt</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {kind === 'buy' ? 'Đơn mua' : 'Thời gian đặt'}
+                              </p>
                               <p className="text-sm text-gray-600">
-                                {new Date(order.createdAt).toLocaleString('vi-VN')}
+                                {kind === 'buy'
+                                  ? `Đặt ngày ${new Date(order.createdAt).toLocaleDateString('vi-VN')}`
+                                  : new Date(order.createdAt).toLocaleString('vi-VN')}
                               </p>
                             </div>
                           </div>

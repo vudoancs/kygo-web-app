@@ -11,11 +11,15 @@ export type ErpOrderStatus =
   | 'COMPLETED'
   | 'CANCELLED';
 
+export type OrderLineType = 'rent' | 'buy';
+export type OrderKind = 'rent' | 'buy' | 'mixed';
+
 export interface OrderLineDto {
   productId: string;
   name: string;
   quantity: number;
   unitPrice: number;
+  type?: OrderLineType;
   images?: string[];
 }
 
@@ -26,6 +30,8 @@ export interface OrderDto {
   status: OrderStatus;
   paymentStatus?: string;
   lines: OrderLineDto[];
+  /** Loại đơn: thuê / mua / hỗn hợp */
+  orderKind?: OrderKind;
   subtotal?: number;
   totalDeposit?: number;
   total: number;
