@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package, Calendar, MapPin, ChevronRight, User as UserIcon, AlertCircle } from 'lucide-react';
+import { Package, Calendar, MapPin, ChevronRight, User as UserIcon, AlertCircle, Wallet } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { useMyOrdersQuery } from '@/hooks/use-orders-query';
 import { isPublicApiConfigured } from '@/libs/env';
@@ -277,6 +277,31 @@ const MyOrders = () => {
                       <div className="text-right">
                         <p className="text-sm text-gray-600">Tổng tiền</p>
                         <p className="font-bold text-lg text-[#b8465f]">{formatPrice(order.total)}</p>
+                        <div className="mt-1 space-y-0.5 text-xs">
+                          <p className="text-emerald-700">
+                            Đã thanh toán:{' '}
+                            <span className="font-semibold">
+                              {formatPrice(Number(order.paidAmount ?? 0))}
+                            </span>
+                          </p>
+                          <p
+                            className={
+                              Number(order.remainingAmount ?? Math.max(0, order.total - Number(order.paidAmount ?? 0))) > 0
+                                ? 'text-amber-700'
+                                : 'text-gray-500'
+                            }
+                          >
+                            Còn lại:{' '}
+                            <span className="font-semibold">
+                              {formatPrice(
+                                Number(
+                                  order.remainingAmount ??
+                                    Math.max(0, order.total - Number(order.paidAmount ?? 0)),
+                                ),
+                              )}
+                            </span>
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -313,6 +338,39 @@ const MyOrders = () => {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                        <div className="flex items-start gap-3">
+                          <Wallet className="w-5 h-5 text-[#b8465f] mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Thanh toán</p>
+                            <p className="text-sm text-gray-600">
+                              Đã thanh toán:{' '}
+                              <span className="font-medium text-emerald-700">
+                                {formatPrice(Number(order.paidAmount ?? 0))}
+                              </span>
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Còn lại:{' '}
+                              <span
+                                className={`font-medium ${
+                                  Number(
+                                    order.remainingAmount ??
+                                      Math.max(0, order.total - Number(order.paidAmount ?? 0)),
+                                  ) > 0
+                                    ? 'text-amber-700'
+                                    : 'text-gray-700'
+                                }`}
+                              >
+                                {formatPrice(
+                                  Number(
+                                    order.remainingAmount ??
+                                      Math.max(0, order.total - Number(order.paidAmount ?? 0)),
+                                  ),
+                                )}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+
                         {rentalSchedule ? (
                           <div className="flex items-start gap-3">
                             <Calendar className="w-5 h-5 text-[#b8465f] mt-0.5 flex-shrink-0" />
@@ -334,7 +392,7 @@ const MyOrders = () => {
                         )}
 
                         {order.venue ? (
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-3 md:col-span-2">
                             <MapPin className="w-5 h-5 text-[#b8465f] mt-0.5 flex-shrink-0" />
                             <div>
                               <p className="text-sm font-medium text-gray-900">Nhận hàng</p>

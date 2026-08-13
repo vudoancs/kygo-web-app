@@ -29,6 +29,10 @@ export interface OrderDto {
   subtotal?: number;
   totalDeposit?: number;
   total: number;
+  /** Đã thanh toán (payments − refunds) */
+  paidAmount?: number;
+  /** Còn lại phải thanh toán */
+  remainingAmount?: number;
   createdAt: string;
   rentalStartDate?: string;
   rentalEndDate?: string;

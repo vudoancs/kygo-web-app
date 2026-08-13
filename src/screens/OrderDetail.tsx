@@ -184,9 +184,39 @@ const OrderDetail = () => {
               ))}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
-              <span className="text-sm text-gray-600">Tổng thanh toán</span>
-              <span className="text-lg font-bold text-[#b8465f]">{formatPrice(orderQuery.data.total)}</span>
+            <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Tổng thanh toán</span>
+                <span className="text-lg font-bold text-[#b8465f]">
+                  {formatPrice(orderQuery.data.total)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Đã thanh toán</span>
+                <span className="font-semibold text-emerald-700">
+                  {formatPrice(Number(orderQuery.data.paidAmount ?? 0))}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Còn lại</span>
+                <span
+                  className={`font-semibold ${
+                    Number(
+                      orderQuery.data.remainingAmount ??
+                        Math.max(0, orderQuery.data.total - Number(orderQuery.data.paidAmount ?? 0)),
+                    ) > 0
+                      ? 'text-amber-700'
+                      : 'text-gray-700'
+                  }`}
+                >
+                  {formatPrice(
+                    Number(
+                      orderQuery.data.remainingAmount ??
+                        Math.max(0, orderQuery.data.total - Number(orderQuery.data.paidAmount ?? 0)),
+                    ),
+                  )}
+                </span>
+              </div>
             </div>
           </div>
         </div>
