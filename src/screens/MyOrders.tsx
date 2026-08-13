@@ -2,12 +2,27 @@
 
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package, Calendar, MapPin, ChevronRight, User as UserIcon, AlertCircle, Wallet } from 'lucide-react';
+import {
+  Package,
+  Calendar,
+  MapPin,
+  ChevronRight,
+  User as UserIcon,
+  AlertCircle,
+  Wallet,
+  Copy,
+  Check,
+} from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { useMyOrdersQuery } from '@/hooks/use-orders-query';
 import { isPublicApiConfigured } from '@/libs/env';
 import type { OrderDto } from '@/types/order.dto';
 import { OrderProductThumb } from '@/components/OrderProductThumb';
+import { ShopContactButtons } from '@/components/ShopContactButtons';
+import {
+  OrderPaymentDialog,
+  type OrderPaymentMode,
+} from '@/components/OrderPaymentDialog';
 
 type OrderTabId =
   | 'all'
@@ -32,6 +47,36 @@ const RAW_STATUS_LABEL: Record<string, { label: string; color: string }> = {
 
 function getRawStatus(order: OrderDto): string {
   return String(order.rawStatus || '').toUpperCase();
+}
+
+function getPaidAmount(order: OrderDto): number {
+  return Math.max(0, Number(order.paidAmount ?? 0));
+}
+
+function getRemainingAmount(order: OrderDto): number {
+  return Math.max(
+    0,
+    Number(order.remainingAmount ?? Math.max(0, order.total - getPaidAmount(order))),
+  );
+}
+
+/** Chờ xác nhận + chưa thanh toán → đặt cọc */
+function canPayDeposit(order: OrderDto): boolean {
+  const raw = getRawStatus(order);
+  const pending =
+    raw === 'PENDING_CONFIRM' || (!raw && order.status === 'pending');
+  return pending && getPaidAmount(order) <= 0;
+}
+
+/** Đang thuê / đã trả / hoàn thành + còn nợ → thanh toán phần còn lại */
+function canPayRemaining(order: OrderDto): boolean {
+  const raw = getRawStatus(order);
+  const eligible =
+    raw === 'DELIVERED' ||
+    raw === 'RETURNED' ||
+    raw === 'COMPLETED' ||
+    order.status === 'completed';
+  return eligible && getRemainingAmount(order) > 0;
 }
 
 function getStatusMeta(order: OrderDto): { label: string; color: string } {
@@ -102,6 +147,11 @@ const MyOrders = () => {
   const { user } = useAppContext();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<OrderTabId>('all');
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+  const [paymentDialog, setPaymentDialog] = useState<{
+    order: OrderDto;
+    mode: OrderPaymentMode;
+  } | null>(null);
 
   const myOrdersQuery = useMyOrdersQuery();
 
@@ -114,6 +164,18 @@ const MyOrders = () => {
     () => orders.filter((order) => matchesTab(order, activeTab)),
     [activeTab, orders],
   );
+
+  const copyOrderNumber = async (order: OrderDto) => {
+    try {
+      await navigator.clipboard.writeText(order.orderNumber);
+      setCopiedOrderId(order.id);
+      window.setTimeout(() => {
+        setCopiedOrderId((prev) => (prev === order.id ? null : prev));
+      }, 1800);
+    } catch {
+      alert('Không thể copy mã đơn. Vui lòng copy thủ công.');
+    }
+  };
 
   const tabItems = useMemo(() => {
     const count = (tab: OrderTabId) => orders.filter((o) => matchesTab(o, tab)).length;
@@ -248,17 +310,42 @@ const MyOrders = () => {
               {filteredOrders.map((order) => {
                 const statusMeta = getStatusMeta(order);
                 const rentalSchedule = formatRentalSchedule(order);
+                const paidAmount = getPaidAmount(order);
+                const remainingAmount = getRemainingAmount(order);
+                const showDepositPay = canPayDeposit(order);
+                const showRemainingPay = canPayRemaining(order);
+                const isCopied = copiedOrderId === order.id;
 
                 return (
                   <div
                     key={order.id}
                     className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
                   >
-                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
+                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-start justify-between gap-4">
                       <div className="flex flex-wrap items-center gap-6">
                         <div>
                           <p className="text-sm text-gray-600">Mã đơn hàng</p>
-                          <p className="font-semibold text-gray-900">{order.orderNumber}</p>
+                          <div className="mt-0.5 flex items-center gap-2">
+                            <p className="font-semibold text-gray-900">{order.orderNumber}</p>
+                            <button
+                              type="button"
+                              onClick={() => copyOrderNumber(order)}
+                              className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:border-[#b8465f] hover:text-[#b8465f]"
+                              title="Copy mã đơn"
+                            >
+                              {isCopied ? (
+                                <>
+                                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                  Đã copy
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-3.5 w-3.5" />
+                                  Copy
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Ngày đặt</p>
@@ -274,33 +361,25 @@ const MyOrders = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-600">Tổng tiền</p>
-                        <p className="font-bold text-lg text-[#b8465f]">{formatPrice(order.total)}</p>
-                        <div className="mt-1 space-y-0.5 text-xs">
-                          <p className="text-emerald-700">
-                            Đã thanh toán:{' '}
-                            <span className="font-semibold">
-                              {formatPrice(Number(order.paidAmount ?? 0))}
-                            </span>
-                          </p>
-                          <p
-                            className={
-                              Number(order.remainingAmount ?? Math.max(0, order.total - Number(order.paidAmount ?? 0))) > 0
-                                ? 'text-amber-700'
-                                : 'text-gray-500'
-                            }
-                          >
-                            Còn lại:{' '}
-                            <span className="font-semibold">
-                              {formatPrice(
-                                Number(
-                                  order.remainingAmount ??
-                                    Math.max(0, order.total - Number(order.paidAmount ?? 0)),
-                                ),
-                              )}
-                            </span>
-                          </p>
+
+                      <div className="flex flex-wrap items-start gap-4">
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">Tổng tiền</p>
+                          <p className="font-bold text-lg text-[#b8465f]">{formatPrice(order.total)}</p>
+                          <div className="mt-1 space-y-0.5 text-xs">
+                            <p className="text-emerald-700">
+                              Đã thanh toán:{' '}
+                              <span className="font-semibold">{formatPrice(paidAmount)}</span>
+                            </p>
+                            <p className={remainingAmount > 0 ? 'text-amber-700' : 'text-gray-500'}>
+                              Còn lại:{' '}
+                              <span className="font-semibold">{formatPrice(remainingAmount)}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="mb-1 text-xs font-medium text-gray-500">Liên hệ shop</p>
+                          <ShopContactButtons compact className="justify-end" />
                         </div>
                       </div>
                     </div>
@@ -345,27 +424,17 @@ const MyOrders = () => {
                             <p className="text-sm text-gray-600">
                               Đã thanh toán:{' '}
                               <span className="font-medium text-emerald-700">
-                                {formatPrice(Number(order.paidAmount ?? 0))}
+                                {formatPrice(paidAmount)}
                               </span>
                             </p>
                             <p className="text-sm text-gray-600">
                               Còn lại:{' '}
                               <span
                                 className={`font-medium ${
-                                  Number(
-                                    order.remainingAmount ??
-                                      Math.max(0, order.total - Number(order.paidAmount ?? 0)),
-                                  ) > 0
-                                    ? 'text-amber-700'
-                                    : 'text-gray-700'
+                                  remainingAmount > 0 ? 'text-amber-700' : 'text-gray-700'
                                 }`}
                               >
-                                {formatPrice(
-                                  Number(
-                                    order.remainingAmount ??
-                                      Math.max(0, order.total - Number(order.paidAmount ?? 0)),
-                                  ),
-                                )}
+                                {formatPrice(remainingAmount)}
                               </span>
                             </p>
                           </div>
@@ -402,10 +471,28 @@ const MyOrders = () => {
                         ) : null}
                       </div>
 
-                      <div className="mt-6 pt-4 border-t border-gray-200 flex gap-3">
+                      <div className="mt-6 pt-4 border-t border-gray-200 flex flex-col gap-3 sm:flex-row">
+                        {showDepositPay ? (
+                          <button
+                            type="button"
+                            onClick={() => setPaymentDialog({ order, mode: 'deposit' })}
+                            className="flex-1 bg-[#b8465f] text-white py-2.5 px-4 rounded-lg hover:bg-[#9d3a50] transition-colors font-medium"
+                          >
+                            Thanh toán đặt cọc
+                          </button>
+                        ) : null}
+                        {showRemainingPay ? (
+                          <button
+                            type="button"
+                            onClick={() => setPaymentDialog({ order, mode: 'remaining' })}
+                            className="flex-1 bg-[#b8465f] text-white py-2.5 px-4 rounded-lg hover:bg-[#9d3a50] transition-colors font-medium"
+                          >
+                            Thanh toán
+                          </button>
+                        ) : null}
                         <button
                           onClick={() => router.push(`/my-orders/${order.orderNumber}`)}
-                          className="flex-1 border border-[#b8465f] text-[#b8465f] py-2 px-4 rounded-lg hover:bg-rose-50 transition-colors font-medium flex items-center justify-center gap-2"
+                          className="flex-1 border border-[#b8465f] text-[#b8465f] py-2.5 px-4 rounded-lg hover:bg-rose-50 transition-colors font-medium flex items-center justify-center gap-2"
                         >
                           Xem chi tiết <ChevronRight className="w-4 h-4" />
                         </button>
@@ -418,6 +505,17 @@ const MyOrders = () => {
           )}
         </>
       )}
+
+      <OrderPaymentDialog
+        open={Boolean(paymentDialog)}
+        onOpenChange={(open) => {
+          if (!open) setPaymentDialog(null);
+        }}
+        mode={paymentDialog?.mode || 'deposit'}
+        orderNumber={paymentDialog?.order.orderNumber || ''}
+        orderTotal={paymentDialog?.order.total || 0}
+        remainingAmount={paymentDialog ? getRemainingAmount(paymentDialog.order) : 0}
+      />
     </div>
   );
 };
