@@ -21,6 +21,7 @@ export interface AppUser {
   name: string;
   email: string;
   avatar?: string;
+  phoneNumber?: string;
 }
 
 interface AppContextType {
@@ -52,6 +53,7 @@ function safeReadUser(): AppUser | null {
       name: p.name,
       email: p.email,
       avatar: typeof p.avatar === 'string' ? p.avatar : undefined,
+      phoneNumber: typeof p.phoneNumber === 'string' && p.phoneNumber.trim() ? p.phoneNumber : undefined,
     };
   } catch {
     return null;

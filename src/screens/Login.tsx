@@ -43,6 +43,7 @@ type ApiUserInfo = Record<string, unknown> & {
   fullName?: unknown;
   email?: unknown;
   avatar?: unknown;
+  phoneNumber?: unknown;
 };
 
 type LoginGoogleResponse = {
@@ -127,6 +128,10 @@ const Login = () => {
                 name: String(info.name ?? info.fullName ?? info.email ?? 'User'),
                 email: String(info.email ?? ''),
                 avatar: typeof info.avatar === 'string' ? info.avatar : undefined,
+                phoneNumber:
+                  typeof info.phoneNumber === 'string' && info.phoneNumber.trim()
+                    ? info.phoneNumber.trim()
+                    : undefined,
               };
 
               login(appUser);

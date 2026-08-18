@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CreditCard, Wallet, Building2, MapPin, User as UserIcon } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { checkoutWeb } from '@/services/orders.service';
+import { fetchMyProfile } from '@/services/users.service';
 import { getErrorMessage } from '@/services/http/errors';
 import { isPublicApiConfigured } from '@/libs/env';
 import { ProductImage } from '@/components/ProductImage';
@@ -14,7 +15,7 @@ import {
 } from '@/components/OrderSuccessDialog';
 
 const Checkout = () => {
-  const { cart, user, clearCart } = useAppContext();
+  const { cart, user, clearCart, login } = useAppContext();
   const router = useRouter();
 
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('pickup');
@@ -22,12 +23,13 @@ const Checkout = () => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: '',
+    phone: user?.phoneNumber || '',
     address: '',
     city: '',
     district: '',
     notes: '',
   });
+  const [phoneLocked, setPhoneLocked] = useState(Boolean(user?.phoneNumber?.trim()));
   const [submitting, setSubmitting] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [successSummary, setSuccessSummary] = useState<OrderSuccessSummary | null>(null);
@@ -39,6 +41,48 @@ const Checkout = () => {
       router.push('/cart');
     }
   }, [cart.length, router, successOpen]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    const currentUser = user;
+    fetchMyProfile()
+      .then((profile) => {
+        if (cancelled) return;
+        const email = String(profile.email || currentUser.email || '').trim();
+        const phone = String(profile.phoneNumber || '').trim();
+        const name = String(profile.name || currentUser.name || '').trim();
+        setFormData((prev) => ({
+          ...prev,
+          email: email || prev.email,
+          phone: phone || prev.phone,
+          name: name || prev.name,
+        }));
+        setPhoneLocked(Boolean(phone));
+        if (phone && phone !== currentUser.phoneNumber) {
+          login({
+            ...currentUser,
+            phoneNumber: phone,
+            email: email || currentUser.email,
+            name: name || currentUser.name,
+          });
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setFormData((prev) => ({
+          ...prev,
+          email: currentUser.email || prev.email,
+          phone: currentUser.phoneNumber || prev.phone,
+        }));
+        setPhoneLocked(Boolean(currentUser.phoneNumber?.trim()));
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Chỉ fetch khi đổi tài khoản — tránh vòng lặp khi login() cập nhật phoneNumber.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -56,11 +100,19 @@ const Checkout = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if (name === 'email') return;
+    if (name === 'phone' && phoneLocked) return;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
   };
+
+  const lockedInputClass =
+    'w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed';
+  const inputClass =
+    'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20 focus:border-[#b8465f]';
 
   const goToMyOrders = () => {
     leaveAfterSuccessRef.current = true;
@@ -203,7 +255,9 @@ const Checkout = () => {
                     value={formData.phone}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20 focus:border-[#b8465f]"
+                    readOnly={phoneLocked}
+                    disabled={phoneLocked}
+                    className={phoneLocked ? lockedInputClass : inputClass}
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -214,9 +268,10 @@ const Checkout = () => {
                     type="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleInputChange}
+                    readOnly
+                    disabled
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20 focus:border-[#b8465f]"
+                    className={lockedInputClass}
                   />
                 </div>
               </div>
