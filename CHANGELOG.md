@@ -13,4 +13,8 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Home: ẩn section **Đang khuyến mãi** khi không có sản phẩm (không hiện empty state).
+
+### Changed
+
 - Filter **Loại váy**: nguồn options từ `GET /web/products/tags` (master API), bỏ hardcode làm nguồn chính; vẫn nhóm UI (dress type / neck-shoulder / silhouette).

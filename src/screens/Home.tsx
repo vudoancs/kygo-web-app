@@ -67,6 +67,8 @@ const Home = () => {
   const newLoading = api && newQuery.isPending;
   const onPromotionLoading = api && onPromotionQuery.isPending;
   const trendingLoading = api && featuredQuery.isPending;
+  /** Ẩn section khi đã biết không có SP khuyến mãi (không hiện empty state). */
+  const onPromotionSectionVisible = onPromotionLoading || onPromotion.length > 0;
 
   const beautyHref = getCmsCategoryPublicHref(CMS_CATEGORY_CODES.BEAUTY_TIPS);
   const eventsCmsHref = getCmsCategoryPublicHref(CMS_CATEGORY_CODES.EVENTS_HOA_KHOI);
@@ -262,7 +264,8 @@ const Home = () => {
         </div>
       </section>
 
-      {/* On Promotion */}
+      {/* On Promotion — chỉ hiện khi đang tải hoặc có sản phẩm */}
+      {onPromotionSectionVisible ? (
       <section className="bg-gray-50 py-12 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-6">
@@ -285,14 +288,6 @@ const Home = () => {
                 <Skeleton key={i} className="aspect-[3/4] w-full rounded-sm" />
               ))}
             </div>
-          ) : api && onPromotionQuery.isSuccess && onPromotion.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-600">
-              {language === 'vi'
-                ? 'Chưa có sản phẩm được đánh dấu “Đang khuyến mãi”.'
-                : language === 'en'
-                  ? 'No products marked as “On promotion” yet.'
-                  : '프로모션으로 표시된 상품이 아직 없습니다.'}
-            </div>
           ) : (
             <>
               <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
@@ -307,20 +302,19 @@ const Home = () => {
                   ))}
                 </div>
               </div>
-              {onPromotion.length > 0 ? (
-                <div className="mt-8 flex justify-center">
-                  <Link
-                    href="/products?onPromotion=1"
-                    className="inline-flex items-center gap-2 px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg border-2 border-[#b8465f] bg-white text-[#b8465f] hover:bg-rose-50 transition-colors font-medium text-sm lg:text-base"
-                  >
-                    {t('common.viewAll')} <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
-                  </Link>
-                </div>
-              ) : null}
+              <div className="mt-8 flex justify-center">
+                <Link
+                  href="/products?onPromotion=1"
+                  className="inline-flex items-center gap-2 px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg border-2 border-[#b8465f] bg-white text-[#b8465f] hover:bg-rose-50 transition-colors font-medium text-sm lg:text-base"
+                >
+                  {t('common.viewAll')} <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
+                </Link>
+              </div>
             </>
           )}
         </div>
       </section>
+      ) : null}
 
       {/* Trending / Featured */}
       <section className="py-12 lg:py-16">
