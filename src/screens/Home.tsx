@@ -13,7 +13,7 @@ import {
 import ProductCard from '../components/ProductCard';
 import ProductCardMobile from '../components/ProductCardMobile';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useNewProductsQuery, useFeaturedProductsQuery } from '@/hooks/use-products-query';
+import { useNewProductsQuery, useFeaturedProductsQuery, useOnPromotionProductsQuery } from '@/hooks/use-products-query';
 import { useCmsPostsQuery } from '@/hooks/use-cms-posts-query';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
@@ -24,6 +24,7 @@ const Home = () => {
   const { language, t } = useLanguage();
   const api = isPublicApiConfigured();
   const newQuery = useNewProductsQuery({ page: 1, pageSize: 8 });
+  const onPromotionQuery = useOnPromotionProductsQuery({ page: 1, pageSize: 8 });
   const featuredQuery = useFeaturedProductsQuery({ page: 1, pageSize: 8 });
   const beautyPostsQuery = useCmsPostsQuery({
     categoryCode: CMS_CATEGORY_CODES.BEAUTY_TIPS,
@@ -47,6 +48,14 @@ const Home = () => {
     return [];
   }, [api, newQuery.isSuccess, newQuery.isError, newQuery.data]);
 
+  const onPromotion = useMemo(() => {
+    const fallback = products.filter((p) => p.badge === 'sale').slice(0, 8);
+    if (!api) return fallback;
+    if (onPromotionQuery.isSuccess) return (onPromotionQuery.data?.items ?? []).map(productFromDto);
+    if (onPromotionQuery.isError) return fallback;
+    return [];
+  }, [api, onPromotionQuery.isSuccess, onPromotionQuery.isError, onPromotionQuery.data]);
+
   const trending = useMemo(() => {
     const fallback = products.filter((p) => p.popular).slice(0, 8);
     if (!api) return fallback;
@@ -56,6 +65,7 @@ const Home = () => {
   }, [api, featuredQuery.isSuccess, featuredQuery.isError, featuredQuery.data]);
 
   const newLoading = api && newQuery.isPending;
+  const onPromotionLoading = api && onPromotionQuery.isPending;
   const trendingLoading = api && featuredQuery.isPending;
 
   const beautyHref = getCmsCategoryPublicHref(CMS_CATEGORY_CODES.BEAUTY_TIPS);
@@ -252,8 +262,68 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Trending / Featured */}
+      {/* On Promotion */}
       <section className="bg-gray-50 py-12 lg:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl lg:text-3xl font-bold text-gray-900">
+                {t('home.sections.onPromotion')}
+              </h2>
+            </div>
+            <Link
+              href="/products?onPromotion=1"
+              className="text-[#b8465f] hover:underline flex items-center gap-1 text-sm"
+            >
+              {t('common.viewAll')} <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {onPromotionLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-[3/4] w-full rounded-sm" />
+              ))}
+            </div>
+          ) : api && onPromotionQuery.isSuccess && onPromotion.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-600">
+              {language === 'vi'
+                ? 'Chưa có sản phẩm được đánh dấu “Đang khuyến mãi”.'
+                : language === 'en'
+                  ? 'No products marked as “On promotion” yet.'
+                  : '프로모션으로 표시된 상품이 아직 없습니다.'}
+            </div>
+          ) : (
+            <>
+              <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                {onPromotion.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+              <div className="lg:hidden overflow-x-auto -mx-4 px-4">
+                <div className="flex gap-4">
+                  {onPromotion.map((product) => (
+                    <ProductCardMobile key={product.id} product={product} />
+                  ))}
+                </div>
+              </div>
+              {onPromotion.length > 0 ? (
+                <div className="mt-8 flex justify-center">
+                  <Link
+                    href="/products?onPromotion=1"
+                    className="inline-flex items-center gap-2 px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg border-2 border-[#b8465f] bg-white text-[#b8465f] hover:bg-rose-50 transition-colors font-medium text-sm lg:text-base"
+                  >
+                    {t('common.viewAll')} <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
+                  </Link>
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Trending / Featured */}
+      <section className="py-12 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-6">
             <div>

@@ -78,6 +78,7 @@ const translations: Record<Language, any> = {
         occasions: 'Dịp Mặc',
         styles: 'Phong Cách',
         newArrivals: 'Hàng Mới Về',
+        onPromotion: 'Đang Khuyến Mãi',
         trending: 'Xu Hướng Hiện Hành',
       },
       features: {
@@ -356,6 +357,7 @@ const translations: Record<Language, any> = {
         occasions: 'Occasions',
         styles: 'Styles',
         newArrivals: 'New Arrivals',
+        onPromotion: 'On Promotion',
         trending: 'Trending Now',
       },
       features: {
@@ -640,6 +642,7 @@ const translations: Record<Language, any> = {
         occasions: '착용 행사',
         styles: '스타일',
         newArrivals: '신상품',
+        onPromotion: '프로모션 중',
         trending: '인기 상품',
       },
       features: {

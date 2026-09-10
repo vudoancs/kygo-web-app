@@ -8,6 +8,7 @@ import {
   fetchProductById,
   fetchNewProducts,
   fetchFeaturedProducts,
+  fetchOnPromotionProducts,
   fetchSimilarProducts,
   fetchWebProductBrands,
   fetchWebProductTags,
@@ -74,13 +75,16 @@ export const productKeys = {
     [...productKeys.all, 'rental-calendar', id, from, to] as const,
 };
 
-export function useProductsQuery(options?: UseProductsQueryOptions | string) {
+export function useProductsQuery(
+  options?: UseProductsQueryOptions | string,
+  opts?: { enabled?: boolean },
+) {
   const normalized: UseProductsQueryOptions =
     typeof options === 'string'
       ? { category: options && options !== 'all' ? [options] : undefined }
       : { ...(options ?? {}) };
   const { page = 1, pageSize = 12, ...rest } = normalized;
-  const enabled = isPublicApiConfigured();
+  const enabled = isPublicApiConfigured() && (opts?.enabled ?? true);
   const full: UseProductsQueryOptions = { page, pageSize, ...rest };
   return useQuery({
     queryKey: productKeys.list(full),
@@ -118,6 +122,25 @@ export function useFeaturedProductsQuery(options?: UseFeaturedProductsQueryOptio
   return useQuery({
     queryKey: [...productKeys.list(full as UseProductsQueryOptions), 'path', 'featured'] as const,
     queryFn: () => fetchFeaturedProducts(full),
+    enabled,
+    retry: 1,
+    meta: { getErrorMessage },
+  });
+}
+
+export type UseOnPromotionProductsQueryOptions = Omit<UseProductsQueryOptions, 'onPromotion'>;
+
+/** GET /web/products/on-promotion */
+export function useOnPromotionProductsQuery(
+  options?: UseOnPromotionProductsQueryOptions,
+  opts?: { enabled?: boolean },
+) {
+  const { page = 1, pageSize = 12, ...rest } = options ?? {};
+  const full: UseOnPromotionProductsQueryOptions = { page, pageSize, ...rest };
+  const enabled = isPublicApiConfigured() && (opts?.enabled ?? true);
+  return useQuery({
+    queryKey: [...productKeys.list(full as UseProductsQueryOptions), 'path', 'on-promotion'] as const,
+    queryFn: () => fetchOnPromotionProducts(full),
     enabled,
     retry: 1,
     meta: { getErrorMessage },

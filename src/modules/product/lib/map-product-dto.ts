@@ -33,7 +33,9 @@ export function productFromDto(dto: ProductDto): Product {
     occasion: dto.occasions?.length ? dto.occasions : dto.occasion ?? [],
     style: dto.styles?.length ? dto.styles : dto.style ?? [],
     tags: dto.tags?.length ? dto.tags : undefined,
-    badge: dto.badge ?? (dto.isNew ? 'new' : dto.isFeatured ? 'hot' : undefined),
+    badge:
+      dto.badge ??
+      (dto.isOnPromotion ? 'sale' : dto.isNew ? 'new' : dto.isFeatured ? 'hot' : undefined),
     popular: dto.popular ?? dto.isFeatured,
   };
 }

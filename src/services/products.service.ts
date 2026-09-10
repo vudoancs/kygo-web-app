@@ -29,8 +29,10 @@ export type FetchProductsParams = {
   featured?: boolean;
   /** Chỉ sản phẩm hàng mới */
   isNew?: boolean;
+  /** Chỉ sản phẩm đang khuyến mãi */
+  onPromotion?: boolean;
   /** Trường sắp xếp — mặc định backend: sku desc */
-  sortBy?: 'sku' | 'createdAt' | 'price' | 'featured';
+  sortBy?: 'sku' | 'createdAt' | 'price' | 'featured' | 'onPromotionAt';
   sortOrder?: 'asc' | 'desc';
 };
 
@@ -62,6 +64,7 @@ function appendQuery(sp: URLSearchParams, params: FetchProductsParams): void {
   if (params.rentEnd) sp.set('rentEnd', params.rentEnd);
   if (params.featured === true) sp.set('featured', 'true');
   if (params.isNew === true) sp.set('isNew', 'true');
+  if (params.onPromotion === true) sp.set('onPromotion', 'true');
   if (params.sortBy) sp.set('sortBy', params.sortBy);
   if (params.sortOrder) sp.set('sortOrder', params.sortOrder);
 }
@@ -99,6 +102,20 @@ export async function fetchFeaturedProducts(
   const raw = await httpRequestOrThrow<unknown>(`/web/products/featured${q ? `?${q}` : ''}`, {
     method: 'GET',
   });
+  return unwrapKygoApiBody<ProductListResponseDto>(raw);
+}
+
+/** GET /web/products/on-promotion — server ép `isOnPromotion`; mặc định sort onPromotionAt desc. */
+export async function fetchOnPromotionProducts(
+  params?: Omit<FetchProductsParams, 'onPromotion'>,
+): Promise<ProductListResponseDto> {
+  const sp = new URLSearchParams();
+  appendQuery(sp, params ?? {});
+  const q = sp.toString();
+  const raw = await httpRequestOrThrow<unknown>(
+    `/web/products/on-promotion${q ? `?${q}` : ''}`,
+    { method: 'GET' },
+  );
   return unwrapKygoApiBody<ProductListResponseDto>(raw);
 }
 

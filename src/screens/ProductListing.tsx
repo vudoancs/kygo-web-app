@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useProductsQuery, useWebProductBrandsQuery, useWebProductTagsQuery } from '@/hooks/use-products-query';
+import { useProductsQuery, useOnPromotionProductsQuery, useWebProductBrandsQuery, useWebProductTagsQuery } from '@/hooks/use-products-query';
 import { useWebCategoriesQuery } from '@/hooks/use-web-categories-query';
 import { flattenCategoryTreeForFilter, resolveProductListCategorySlugs, DRESSES_CATEGORY_ROOT_SLUG } from '@/libs/web-category-tree';
 import {
@@ -64,6 +64,9 @@ const ProductListing = () => {
   const urlHydratedRef = useRef(true);
   const { t } = useLanguage();
   const isApi = isPublicApiConfigured();
+  const onPromotionParam = searchParams.get('onPromotion');
+  const isOnPromotionCollection =
+    onPromotionParam === '1' || onPromotionParam === 'true';
   const [sortBy, setSortBy] = useState<ProductListingSortKey>(DEFAULT_PRODUCT_LISTING_SORT);
   const [filterType, setFilterType] = useState<'all' | 'rent' | 'buy'>('all');
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -213,6 +216,7 @@ const ProductListing = () => {
         startDate,
         endDate,
         sortBy,
+        isOnPromotionCollection ? '1' : '0',
       ].join('|'),
     [
       category,
@@ -229,6 +233,7 @@ const ProductListing = () => {
       startDate,
       endDate,
       sortBy,
+      isOnPromotionCollection,
     ],
   );
 
@@ -236,7 +241,13 @@ const ProductListing = () => {
     setCurrentPage(1);
   }, [pageResetKey]);
 
-  const productsQuery = useProductsQuery(listQueryArgs);
+  const productsQuery = useProductsQuery(listQueryArgs, {
+    enabled: !isOnPromotionCollection,
+  });
+  const onPromotionQuery = useOnPromotionProductsQuery(listQueryArgs, {
+    enabled: isOnPromotionCollection,
+  });
+  const activeListQuery = isOnPromotionCollection ? onPromotionQuery : productsQuery;
 
   const listFiltersActive = useMemo(
     () =>
@@ -265,24 +276,24 @@ const ProductListing = () => {
 
   const baseProducts = useMemo(() => {
     if (!isApi) return products;
-    if (productsQuery.isPending) return [];
-    if (productsQuery.isSuccess && productsQuery.data) {
-      const mapped = productsQuery.data.items.map(productFromDto);
+    if (activeListQuery.isPending) return [];
+    if (activeListQuery.isSuccess && activeListQuery.data) {
+      const mapped = activeListQuery.data.items.map(productFromDto);
       if (mapped.length > 0) return mapped;
-      if (listFiltersActive || (productsQuery.data.total ?? 0) === 0) return [];
-      const pageFromApi = productsQuery.data.page ?? 1;
+      if (listFiltersActive || (activeListQuery.data.total ?? 0) === 0) return [];
+      const pageFromApi = activeListQuery.data.page ?? 1;
       if (pageFromApi <= 1) return products;
       return [];
     }
-    if (productsQuery.isError) return products;
+    if (activeListQuery.isError) return products;
     return products;
   }, [
     isApi,
     listFiltersActive,
-    productsQuery.data,
-    productsQuery.isError,
-    productsQuery.isPending,
-    productsQuery.isSuccess,
+    activeListQuery.data,
+    activeListQuery.isError,
+    activeListQuery.isPending,
+    activeListQuery.isSuccess,
   ]);
 
   const brandOptions = useMemo(() => {
@@ -364,11 +375,11 @@ const ProductListing = () => {
   /** Đang dùng kết quả lọc từ API — bỏ lọc trùng trên client (chỉ còn sort cục bộ). */
   const serverFiltersActive =
     isApi &&
-    productsQuery.isSuccess &&
-    productsQuery.data &&
-    ((productsQuery.data.items?.length ?? 0) > 0 || (productsQuery.data.total ?? 0) > 0);
+    activeListQuery.isSuccess &&
+    activeListQuery.data &&
+    ((activeListQuery.data.items?.length ?? 0) > 0 || (activeListQuery.data.total ?? 0) > 0);
 
-  const apiLoading = isApi && productsQuery.isPending;
+  const apiLoading = isApi && activeListQuery.isPending;
 
   const staticCategoryOptions = useMemo(
     () => [
@@ -543,17 +554,17 @@ const ProductListing = () => {
     filterType,
   ]);
 
-  const totalFromApi = productsQuery.data?.total;
+  const totalFromApi = activeListQuery.data?.total;
   /** Số lượng hiển thị ở dòng “Hiển thị N sản phẩm” — dùng `total` từ API khi có, không dùng độ dài trang hiện tại. */
   const listResultCount =
-    isApi && productsQuery.isSuccess && productsQuery.data && typeof productsQuery.data.total === 'number'
-      ? productsQuery.data.total
+    isApi && activeListQuery.isSuccess && activeListQuery.data && typeof activeListQuery.data.total === 'number'
+      ? activeListQuery.data.total
       : filteredProducts.length;
   /** Chỉ khi API có `total > 0` — tránh coi mock fallback (total 0) là phân trang server. */
   const useServerPagination =
     isApi &&
-    productsQuery.isSuccess &&
-    productsQuery.data &&
+    activeListQuery.isSuccess &&
+    activeListQuery.data &&
     (totalFromApi ?? 0) > 0;
 
   const totalPages = useMemo(() => {
@@ -890,10 +901,26 @@ const ProductListing = () => {
       <div className="text-sm text-gray-500 mb-6">
         <Link href="/" className="hover:text-[#b8465f]">{t('listing.breadcrumbHome')}</Link>
         <span className="mx-2">/</span>
-        <span className="text-gray-900">{t('listing.breadcrumbProducts')}</span>
+        {isOnPromotionCollection ? (
+          <>
+            <Link href="/products" className="hover:text-[#b8465f]">
+              {t('listing.breadcrumbProducts')}
+            </Link>
+            <span className="mx-2">/</span>
+            <span className="text-gray-900">{t('home.sections.onPromotion')}</span>
+          </>
+        ) : (
+          <span className="text-gray-900">{t('listing.breadcrumbProducts')}</span>
+        )}
       </div>
 
-      {isApi && productsQuery.isError ? (
+      {isOnPromotionCollection ? (
+        <h1 className="mb-6 text-2xl font-bold text-gray-900 lg:text-3xl">
+          {t('home.sections.onPromotion')}
+        </h1>
+      ) : null}
+
+      {isApi && activeListQuery.isError ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
           Không kết nối được API sản phẩm — đang hiển thị dữ liệu mẫu.
         </p>

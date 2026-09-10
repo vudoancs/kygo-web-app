@@ -43,6 +43,7 @@ export interface ProductDto {
   /** ERP: cờ website */
   isNew?: boolean;
   isFeatured?: boolean;
+  isOnPromotion?: boolean;
   rentalCalendar?: ProductRentalCalendarDto;
 }
 

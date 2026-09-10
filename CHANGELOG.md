@@ -7,6 +7,10 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Home: mục **Đang khuyến mãi** (giữa Hàng mới về và Xu hướng); “Xem tất cả” → `/products?onPromotion=1` gọi `GET /web/products/on-promotion`.
+
 ### Changed
 
 - Filter **Loại váy**: nguồn options từ `GET /web/products/tags` (master API), bỏ hardcode làm nguồn chính; vẫn nhóm UI (dress type / neck-shoulder / silhouette).
