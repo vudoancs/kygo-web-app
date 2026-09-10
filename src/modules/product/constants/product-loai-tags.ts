@@ -1,32 +1,4 @@
-/** Đồng bộ `kygo-web-admin/src/modules/products/constants/product-loai-tags.ts` */
-export const PRODUCT_LOAI_TAG_OPTIONS = [
-  'Áo dài',
-  'Váy ngắn',
-  'Đầm dạ hội',
-  'Đầm NTK',
-  'Đầm thiết kế',
-  'Đầm ngắn',
-  'Vest nữ',
-  'Đầm luxury',
-  'Cúp ngực',
-  'Choàng cổ',
-  'Chéo cổ',
-  'Chéo vai',
-  'Xẻ chân',
-  'Xẻ tà',
-  'Che vai',
-  'Bẹt vai',
-  'Lệch vai',
-  'Cổ yếm',
-  'Hở lưng',
-  'Đuôi cá',
-] as const;
-
-export type ProductLoaiTag = (typeof PRODUCT_LOAI_TAG_OPTIONS)[number];
-
-const LOAI_TAG_SET = new Set<string>(PRODUCT_LOAI_TAG_OPTIONS);
-
-/** Nhóm hiển thị filter — khớp cách admin gọi là "loại (tag)". */
+/** Nhóm hiển thị filter UI — tên tag khớp master product_tags trên API. */
 export const PRODUCT_LOAI_FILTER_GROUPS = [
   {
     id: 'dressType',
@@ -64,7 +36,7 @@ export const PRODUCT_LOAI_FILTER_GROUPS = [
 ] as const satisfies ReadonlyArray<{
   id: string;
   i18nKey: string;
-  tags: readonly ProductLoaiTag[];
+  tags: readonly string[];
 }>;
 
 export interface GroupedLoaiFilterOption {
@@ -73,14 +45,21 @@ export interface GroupedLoaiFilterOption {
   tags: string[];
 }
 
-/** Sắp xếp tag theo thứ tự chuẩn + chỉ giữ tag đang có trên storefront. */
-export function sortLoaiTags(tags: string[]): string[] {
+/** Sắp xếp theo thứ tự API (preferredOrder) rồi alphabet tiếng Việt. */
+export function sortLoaiTags(tags: string[], preferredOrder?: string[]): string[] {
   const unique = [...new Set(tags.map((t) => t.trim()).filter(Boolean))];
-  const canonical = PRODUCT_LOAI_TAG_OPTIONS.filter((t) => unique.includes(t));
-  const other = unique
-    .filter((t) => !LOAI_TAG_SET.has(t))
-    .sort((a, b) => a.localeCompare(b, 'vi'));
-  return [...canonical, ...other];
+  if (preferredOrder?.length) {
+    const order = new Map(preferredOrder.map((tag, index) => [tag, index]));
+    return unique.sort((a, b) => {
+      const ia = order.get(a);
+      const ib = order.get(b);
+      if (ia != null && ib != null) return ia - ib;
+      if (ia != null) return -1;
+      if (ib != null) return 1;
+      return a.localeCompare(b, 'vi');
+    });
+  }
+  return unique.sort((a, b) => a.localeCompare(b, 'vi'));
 }
 
 export function buildGroupedLoaiFilterOptions(availableTags: string[]): GroupedLoaiFilterOption[] {
@@ -97,7 +76,7 @@ export function buildGroupedLoaiFilterOptions(availableTags: string[]): GroupedL
     };
   }).filter((group) => group.tags.length > 0);
 
-  const other = sortLoaiTags(availableTags).filter((tag) => !used.has(tag));
+  const other = sortLoaiTags(availableTags, availableTags).filter((tag) => !used.has(tag));
   if (other.length) {
     groups.push({
       groupId: 'other',

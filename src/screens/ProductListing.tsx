@@ -27,7 +27,6 @@ import {
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import {
-  PRODUCT_LOAI_TAG_OPTIONS,
   buildGroupedLoaiFilterOptions,
   sortLoaiTags,
 } from '@/modules/product/constants/product-loai-tags';
@@ -303,11 +302,10 @@ const ProductListing = () => {
   };
 
   const tagOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const tag of tagsQuery.data?.tags ?? []) {
-      const s = String(tag || '').trim();
-      if (s) set.add(s);
-    }
+    const fromApi = (tagsQuery.data?.tags ?? [])
+      .map((tag) => String(tag || '').trim())
+      .filter(Boolean);
+    const set = new Set<string>(fromApi);
     for (const tag of selectedTags) {
       const s = String(tag || '').trim();
       if (s) set.add(s);
@@ -320,8 +318,8 @@ const ProductListing = () => {
         }
       }
     }
-    return sortLoaiTags([...set]);
-  }, [isApi, tagsQuery.data?.tags, selectedTags]);
+    return sortLoaiTags([...set], fromApi);
+  }, [isApi, tagsQuery.data?.tags, selectedTags, products]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -339,11 +337,8 @@ const ProductListing = () => {
     [selectedColors],
   );
 
-  /** Loại váy cho quick filter — đủ danh sách chuẩn + tag từ API. */
-  const quickLoaiOptions = useMemo(
-    () => sortLoaiTags([...PRODUCT_LOAI_TAG_OPTIONS, ...tagOptions]),
-    [tagOptions],
-  );
+  /** Loại váy cho quick filter — lấy từ master API (đã sort). */
+  const quickLoaiOptions = useMemo(() => sortLoaiTags(tagOptions, tagOptions), [tagOptions]);
 
   const quickLoaiGroups = useMemo(
     () => buildGroupedLoaiFilterOptions(quickLoaiOptions),
@@ -352,8 +347,8 @@ const ProductListing = () => {
 
   const quickLoaiLabel = useMemo(() => {
     if (selectedTags.length === 0) return t('filter.all');
-    return sortLoaiTags(selectedTags).join(', ');
-  }, [selectedTags, t]);
+    return sortLoaiTags(selectedTags, tagOptions).join(', ');
+  }, [selectedTags, tagOptions, t]);
 
   const quickColorValue =
     selectedColors.length === 0 ? FILTER_ALL_VALUE : selectedColors[0];
