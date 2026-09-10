@@ -14,6 +14,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Home: ẩn section **Đang khuyến mãi** khi không có sản phẩm (không hiện empty state).
+- Home **Đang khuyến mãi**: không fallback mock data khi thiếu API / lỗi — chỉ hiện SP từ `GET /web/products/on-promotion`.
 
 ### Changed
 

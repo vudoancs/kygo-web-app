@@ -49,12 +49,9 @@ const Home = () => {
   }, [api, newQuery.isSuccess, newQuery.isError, newQuery.data]);
 
   const onPromotion = useMemo(() => {
-    const fallback = products.filter((p) => p.badge === 'sale').slice(0, 8);
-    if (!api) return fallback;
-    if (onPromotionQuery.isSuccess) return (onPromotionQuery.data?.items ?? []).map(productFromDto);
-    if (onPromotionQuery.isError) return fallback;
-    return [];
-  }, [api, onPromotionQuery.isSuccess, onPromotionQuery.isError, onPromotionQuery.data]);
+    if (!api || !onPromotionQuery.isSuccess) return [];
+    return (onPromotionQuery.data?.items ?? []).map(productFromDto);
+  }, [api, onPromotionQuery.isSuccess, onPromotionQuery.data]);
 
   const trending = useMemo(() => {
     const fallback = products.filter((p) => p.popular).slice(0, 8);
