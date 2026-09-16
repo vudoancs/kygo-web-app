@@ -14,6 +14,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Chi tiết sản phẩm (thuê): chỉ hiện giờ nhận/trả sau khi chọn ngày; mặc định nhận sau **08:00**, trả trước **21:30** (giỏ hàng và checkout gửi cùng giờ).
 - Danh sách sản phẩm (mock/offline): sort và lọc khoảng giá theo giá thuê/mua hiển thị (giá KM nếu có).
 - Home: ẩn section **Đang khuyến mãi** khi không có sản phẩm (không hiện empty state).
 - Home **Đang khuyến mãi**: không fallback mock data khi thiếu API / lỗi — chỉ hiện SP từ `GET /web/products/on-promotion`.

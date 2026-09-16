@@ -13,6 +13,7 @@ import {
   OrderSuccessDialog,
   type OrderSuccessSummary,
 } from '@/components/OrderSuccessDialog';
+import { DEFAULT_PICKUP_TIME, DEFAULT_RETURN_TIME } from '@/libs/vn-date';
 
 const Checkout = () => {
   const { cart, user, clearCart, login } = useAppContext();
@@ -163,8 +164,8 @@ const Checkout = () => {
                 rentStartDate: item.rentStartDate,
                 rentEndDate: item.rentEndDate,
                 rentDuration: item.rentDuration,
-                pickupTime: '12:00',
-                returnTime: '12:00',
+                pickupTime: DEFAULT_PICKUP_TIME,
+                returnTime: DEFAULT_RETURN_TIME,
               }
             : {}),
         })),

@@ -11,7 +11,14 @@ import RentalCalendar from '../components/RentalCalendar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProductDetailQuery, useProductRentalCalendarQuery, useSimilarProductsQuery } from '@/hooks/use-products-query';
-import { ymdInVn, defaultRentalCalendarQueryRange, toUtcMidnightIsoFromVnDate, addDaysToYmd } from '@/libs/vn-date';
+import {
+  ymdInVn,
+  defaultRentalCalendarQueryRange,
+  toUtcMidnightIsoFromVnDate,
+  addDaysToYmd,
+  DEFAULT_PICKUP_TIME,
+  DEFAULT_RETURN_TIME,
+} from '@/libs/vn-date';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import ProductCard from '../components/ProductCard';
@@ -106,7 +113,7 @@ const ProductDetail = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   // Ngày khách chọn bắt đầu thuê (UI chọn ngày này).
-  const [rentStartDate, setRentStartDate] = useState<Date | null>(new Date());
+  const [rentStartDate, setRentStartDate] = useState<Date | null>(null);
   const [rentDuration, setRentDuration] = useState(3);
   const [rentDurationInput, setRentDurationInput] = useState('');
   const [actionType, setActionType] = useState<'rent' | 'buy'>('rent');
@@ -668,21 +675,17 @@ const ProductDetail = () => {
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-700 font-medium">
-                        {language === 'vi' ? 'Nhận hàng sau' : language === 'en' ? 'Pickup after' : '수령 이후'}:
-                      </span>
+                      <span className="text-gray-700 font-medium">{t('cart.pickupTime')}:</span>
                       <span className="text-gray-900 font-semibold">
-                        12:00 - {rentStartDate.toLocaleDateString(
+                        {DEFAULT_PICKUP_TIME} - {rentStartDate.toLocaleDateString(
                           language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'ko-KR'
                         )}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-700 font-medium">
-                        {language === 'vi' ? 'Trả hàng trước' : language === 'en' ? 'Return before' : '반납 이전'}:
-                      </span>
+                      <span className="text-gray-700 font-medium">{t('cart.returnTime')}:</span>
                       <span className="text-gray-900 font-semibold">
-                        12:00 - {returnDate.toLocaleDateString(
+                        {DEFAULT_RETURN_TIME} - {returnDate.toLocaleDateString(
                           language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'ko-KR'
                         )}
                       </span>

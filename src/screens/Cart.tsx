@@ -7,6 +7,7 @@ import { Trash2, ShoppingBag } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ProductImage } from '@/components/ProductImage';
+import { DEFAULT_PICKUP_TIME, DEFAULT_RETURN_TIME } from '@/libs/vn-date';
 
 const Cart = () => {
   const { cart, removeFromCart } = useAppContext();
@@ -93,8 +94,8 @@ const Cart = () => {
                 {item.type === 'rent' && item.rentStartDate && item.rentDuration && (() => {
                   const startDate = new Date(item.rentStartDate);
                   const duration = item.rentDuration;
-                  const pickupTime = '12:00';
-                  const returnTime = '12:00';
+                  const pickupTime = DEFAULT_PICKUP_TIME;
+                  const returnTime = DEFAULT_RETURN_TIME;
                   const returnDate = item.rentEndDate
                     ? new Date(item.rentEndDate)
                     : new Date(

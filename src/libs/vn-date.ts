@@ -1,5 +1,9 @@
 const VN_TZ = 'Asia/Ho_Chi_Minh';
 
+/** Giờ nhận/trả mặc định (VN) — gửi kèm pickupTime/returnTime khi checkout. */
+export const DEFAULT_PICKUP_TIME = '08:00';
+export const DEFAULT_RETURN_TIME = '21:30';
+
 /** YYYY-MM-DD theo lịch Việt Nam. */
 export function ymdInVn(date: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -27,7 +31,7 @@ export function atHourInVn(date: Date | string, hour: number, minute = 0): Date 
 /**
  * Ngày lịch VN → ISO midnight UTC (giống admin):
  * `2026-08-07` → `2026-08-07T00:00:00.000Z`
- * Giờ nhận/trả 12:00 lưu riêng ở pickupTime/returnTime.
+ * Giờ nhận/trả lưu riêng ở pickupTime/returnTime (DEFAULT_PICKUP_TIME / DEFAULT_RETURN_TIME).
  */
 export function toUtcMidnightIsoFromVnDate(date: Date | string): string {
   const ymd =
