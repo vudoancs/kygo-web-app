@@ -10,7 +10,9 @@ import { isPublicApiConfigured } from '@/libs/env';
 import { useWebCategoriesQuery } from '@/hooks/use-web-categories-query';
 import {
   getFallbackHeaderMenu,
+  getOnPromotionMenuItem,
   getStaticTailMenu,
+  insertOnPromotionMenuItem,
   webCategoryTreeToMenuItems,
   type HeaderMenuItem,
 } from '@/components/header-menu-items';
@@ -31,7 +33,11 @@ const Header = () => {
     const tail = getStaticTailMenu(language);
     const tree = categoriesQuery.data?.tree;
     if (isPublicApiConfigured() && Array.isArray(tree) && tree.length > 0) {
-      return [home, ...webCategoryTreeToMenuItems(tree), ...tail];
+      const categories = insertOnPromotionMenuItem(
+        webCategoryTreeToMenuItems(tree),
+        getOnPromotionMenuItem(t),
+      );
+      return [home, ...categories, ...tail];
     }
     return getFallbackHeaderMenu(language, t);
   }, [language, t, categoriesQuery.data?.tree]);

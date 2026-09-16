@@ -7,6 +7,34 @@ export type HeaderMenuItem = {
   dropdown?: { label: string; path: string }[];
 };
 
+export function getOnPromotionMenuItem(t: (key: string) => string): HeaderMenuItem {
+  return {
+    key: 'on-promotion',
+    label: t('home.sections.onPromotion'),
+    path: '/products?onPromotion=1',
+  };
+}
+
+function isKidsCategoryMenuItem(item: HeaderMenuItem): boolean {
+  return item.key === 'cat-kids' || item.path === '/products/kids';
+}
+
+/** Chèn Đang khuyến mãi ngay sau Trẻ em/Kids; nếu không có Kids thì trước tail. */
+export function insertOnPromotionMenuItem(
+  categoryItems: HeaderMenuItem[],
+  promoItem: HeaderMenuItem,
+): HeaderMenuItem[] {
+  const kidsIndex = categoryItems.findIndex(isKidsCategoryMenuItem);
+  if (kidsIndex >= 0) {
+    return [
+      ...categoryItems.slice(0, kidsIndex + 1),
+      promoItem,
+      ...categoryItems.slice(kidsIndex + 1),
+    ];
+  }
+  return [...categoryItems, promoItem];
+}
+
 export function webCategoryTreeToMenuItems(tree: WebCategoryNode[]): HeaderMenuItem[] {
   return tree.map((root) => ({
     key: `cat-${root.slug}`,
@@ -133,26 +161,8 @@ export function getFallbackHeaderMenu(
         },
       ],
     },
-    {
-      key: 'style-tips',
-      label:
-        language === 'vi'
-          ? 'Bí quyết mặc đẹp'
-          : language === 'en'
-            ? 'Style Tips'
-            : '스타일 팁',
-      path: '/style-tips',
-    },
-    {
-      key: 'events',
-      label:
-        language === 'vi'
-          ? 'Sự kiện & Hoa khôi'
-          : language === 'en'
-            ? 'Events & Beauty Queens'
-            : '이벤트 & 미인 대회',
-      path: '/events',
-    },
+    getOnPromotionMenuItem(t),
+    ...getStaticTailMenu(language),
   ];
 }
 

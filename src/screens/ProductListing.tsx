@@ -24,6 +24,7 @@ import {
   mapListingSortToApiParams,
   type ProductListingSortKey,
 } from '@/libs/product-list-sort';
+import { getListingDisplayPrice } from '@/libs/product-listing-price';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import {
@@ -489,7 +490,7 @@ const ProductListing = () => {
       }
 
       filtered = filtered.filter((p) => {
-        const unitPrice = filterType === 'buy' ? p.buyPrice : p.rentPricePerDay;
+        const unitPrice = getListingDisplayPrice(p, filterType);
         return unitPrice >= priceRange[0] && unitPrice <= priceRange[1];
       });
 
@@ -515,18 +516,16 @@ const ProductListing = () => {
           );
           break;
         case 'price-asc':
-          filtered.sort((a, b) => {
-            const pa = filterType === 'buy' ? a.buyPrice : a.rentPricePerDay;
-            const pb = filterType === 'buy' ? b.buyPrice : b.rentPricePerDay;
-            return pa - pb;
-          });
+          filtered.sort(
+            (a, b) =>
+              getListingDisplayPrice(a, filterType) - getListingDisplayPrice(b, filterType),
+          );
           break;
         case 'price-desc':
-          filtered.sort((a, b) => {
-            const pa = filterType === 'buy' ? a.buyPrice : a.rentPricePerDay;
-            const pb = filterType === 'buy' ? b.buyPrice : b.rentPricePerDay;
-            return pb - pa;
-          });
+          filtered.sort(
+            (a, b) =>
+              getListingDisplayPrice(b, filterType) - getListingDisplayPrice(a, filterType),
+          );
           break;
         case 'newest':
           filtered.sort((a, b) => (b.badge === 'new' ? 1 : 0) - (a.badge === 'new' ? 1 : 0));

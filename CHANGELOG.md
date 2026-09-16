@@ -9,10 +9,12 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Header: mục **Đang khuyến mãi** (sau Trẻ em/Kids, trước Bí quyết mặc đẹp) → `/products?onPromotion=1`.
 - Home: mục **Đang khuyến mãi** (giữa Hàng mới về và Xu hướng); “Xem tất cả” → `/products?onPromotion=1` gọi `GET /web/products/on-promotion`.
 
 ### Changed
 
+- Danh sách sản phẩm (mock/offline): sort và lọc khoảng giá theo giá thuê/mua hiển thị (giá KM nếu có).
 - Home: ẩn section **Đang khuyến mãi** khi không có sản phẩm (không hiện empty state).
 - Home **Đang khuyến mãi**: không fallback mock data khi thiếu API / lỗi — chỉ hiện SP từ `GET /web/products/on-promotion`.
 
