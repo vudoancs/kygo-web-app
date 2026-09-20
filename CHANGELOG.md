@@ -9,6 +9,11 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Giá thuê hiệu lực từ API `pricing` (strike, %, hết KM); badge SALE trên card; cart/checkout hiện giá gốc khi có KM.
+- Home «Đang khuyến mãi» gọi `homepageOnly=true`.
+
+### Added
+
 - Header: mục **Đang khuyến mãi** (sau Trẻ em/Kids, trước Bí quyết mặc đẹp) → `/products?onPromotion=1`.
 - Home: mục **Đang khuyến mãi** (giữa Hàng mới về và Xu hướng); “Xem tất cả” → `/products?onPromotion=1` gọi `GET /web/products/on-promotion`.
 

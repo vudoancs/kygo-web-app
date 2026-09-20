@@ -57,6 +57,8 @@ const ProductCardMobile: React.FC<ProductCardMobileProps> = ({ product }) => {
           label={`${t('products.rentPerTime')}:`}
           price={product.rentPricePerDay}
           originalPrice={originalRentPrice}
+          discountPercent={product.salePercent}
+          promotionEndsAt={product.promotionEndsAt}
           tone="accent"
           size="sm"
           labelClassName="text-xs text-gray-700 font-medium"

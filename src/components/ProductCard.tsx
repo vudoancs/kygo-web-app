@@ -39,6 +39,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </span>
           </div>
         )}
+        {/* SALE Badge */}
+        {product.badge === 'sale' && (
+          <div className="absolute top-2 lg:top-3 left-2 lg:left-3">
+            <span className="bg-[#b8465f] text-white text-[10px] lg:text-xs px-2 lg:px-3 py-1 lg:py-1.5 rounded-sm font-medium uppercase">
+              {product.salePercent ? `−${product.salePercent}%` : 'SALE'}
+            </span>
+          </div>
+        )}
         {/* HOT Badge */}
         {product.badge === 'hot' && (
           <div className="absolute top-2 lg:top-3 left-2 lg:left-3">
@@ -90,6 +98,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               label={`${t('products.rentPerTime')}:`}
               price={product.rentPricePerDay}
               originalPrice={originalRentPrice}
+              discountPercent={product.salePercent}
+              promotionEndsAt={product.promotionEndsAt}
               tone="accent"
               size="xs"
               labelClassName="text-[9px] lg:text-xs text-gray-500 font-normal"

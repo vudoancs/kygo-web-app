@@ -44,6 +44,18 @@ export interface ProductDto {
   isNew?: boolean;
   isFeatured?: boolean;
   isOnPromotion?: boolean;
+  /** Nested effective rental pricing from ERP */
+  pricing?: {
+    originalRentalPrice: number;
+    effectiveRentalPrice: number;
+    isOnPromotion: boolean;
+    discountAmount: number;
+    discountPercent: number;
+    promotionId?: string;
+    promotionName?: string;
+    promotionStartAt?: string;
+    promotionEndsAt?: string;
+  };
   rentalCalendar?: ProductRentalCalendarDto;
 }
 

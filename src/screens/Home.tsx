@@ -24,7 +24,7 @@ const Home = () => {
   const { language, t } = useLanguage();
   const api = isPublicApiConfigured();
   const newQuery = useNewProductsQuery({ page: 1, pageSize: 8 });
-  const onPromotionQuery = useOnPromotionProductsQuery({ page: 1, pageSize: 8 });
+  const onPromotionQuery = useOnPromotionProductsQuery({ page: 1, pageSize: 8, homepageOnly: true });
   const featuredQuery = useFeaturedProductsQuery({ page: 1, pageSize: 8 });
   const beautyPostsQuery = useCmsPostsQuery({
     categoryCode: CMS_CATEGORY_CODES.BEAUTY_TIPS,

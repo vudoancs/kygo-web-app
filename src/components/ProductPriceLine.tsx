@@ -9,6 +9,8 @@ interface ProductPriceLineProps {
   label?: string;
   price: number;
   originalPrice?: number;
+  discountPercent?: number;
+  promotionEndsAt?: string;
   tone?: 'default' | 'accent';
   size?: ProductPriceLineSize;
   className?: string;
@@ -35,6 +37,8 @@ export function ProductPriceLine({
   label,
   price,
   originalPrice,
+  discountPercent,
+  promotionEndsAt,
   tone = 'default',
   size = 'sm',
   className = '',
@@ -47,20 +51,39 @@ export function ProductPriceLine({
       : 'font-bold text-gray-900';
 
   return (
-    <div className={`flex flex-wrap items-baseline gap-1.5 lg:gap-2 ${className}`}>
-      {label ? (
-        <span className={`text-gray-500 shrink-0 ${labelClassName || priceSizeClass[size]}`}>
-          {label}
+    <div className={`flex flex-col gap-0.5 ${className}`}>
+      <div className="flex flex-wrap items-baseline gap-1.5 lg:gap-2">
+        {label ? (
+          <span className={`text-gray-500 shrink-0 ${labelClassName || priceSizeClass[size]}`}>
+            {label}
+          </span>
+        ) : null}
+        {onSale ? (
+          <span className={`text-gray-400 line-through ${originalSizeClass[size]}`}>
+            {formatVndPrice(originalPrice!)}
+          </span>
+        ) : null}
+        <span className={`${priceClass} ${priceSizeClass[size]}`}>
+          {formatVndPrice(price)}
+        </span>
+        {onSale && discountPercent && discountPercent > 0 ? (
+          <span className={`font-medium text-[#b8465f] ${originalSizeClass[size]}`}>
+            −{discountPercent}%
+          </span>
+        ) : null}
+      </div>
+      {onSale && promotionEndsAt ? (
+        <span className="text-[10px] text-gray-500 lg:text-xs">
+          KM đến{' '}
+          {new Date(promotionEndsAt).toLocaleString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
         </span>
       ) : null}
-      {onSale ? (
-        <span className={`text-gray-400 line-through ${originalSizeClass[size]}`}>
-          {formatVndPrice(originalPrice!)}
-        </span>
-      ) : null}
-      <span className={`${priceClass} ${priceSizeClass[size]}`}>
-        {formatVndPrice(price)}
-      </span>
     </div>
   );
 }

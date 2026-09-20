@@ -451,7 +451,14 @@ const Checkout = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 line-clamp-2">{item.name}</p>
                       <p className="text-xs text-gray-600">Size: {item.size}</p>
-                      <p className="text-sm font-semibold text-gray-900 mt-1">{formatPrice(item.price)}</p>
+                      <p className="text-sm font-semibold text-gray-900 mt-1">
+                        {item.originalPrice && item.originalPrice > item.price ? (
+                          <span className="mr-2 text-xs font-normal text-gray-400 line-through">
+                            {formatPrice(item.originalPrice)}
+                          </span>
+                        ) : null}
+                        {formatPrice(item.price)}
+                      </p>
                     </div>
                   </div>
                 ))}

@@ -10,6 +10,9 @@ export interface CartItem {
   image: string;
   size: string;
   price: number;
+  /** Giá gốc trước KM (hiển thị gạch ngang) */
+  originalPrice?: number;
+  discountPercent?: number;
   rentStartDate?: string;
   rentEndDate?: string;
   rentDuration?: number;

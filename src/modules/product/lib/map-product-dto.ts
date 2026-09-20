@@ -7,9 +7,26 @@ export function productFromDto(dto: ProductDto): Product {
   const images = resolveProductImages(dto.images);
   const image = resolveProductImage(images[0]);
   const buyPrice = dto.buyPrice ?? dto.price ?? 0;
+
+  const nested = dto.pricing;
   const rentPricePerDay =
-    dto.rentPricePerDay ?? (buyPrice > 0 ? Math.max(1, Math.round(buyPrice * 0.1)) : 0);
-  const originalRentPricePerDay = dto.originalRentPricePerDay;
+    nested?.effectiveRentalPrice ??
+    dto.rentPricePerDay ??
+    (buyPrice > 0 ? Math.max(1, Math.round(buyPrice * 0.1)) : 0);
+  const originalRentPricePerDay =
+    nested?.isOnPromotion && nested.originalRentalPrice > rentPricePerDay
+      ? nested.originalRentalPrice
+      : dto.originalRentPricePerDay;
+  const salePercent =
+    nested?.isOnPromotion && nested.discountPercent > 0
+      ? nested.discountPercent
+      : originalRentPricePerDay &&
+          originalRentPricePerDay > rentPricePerDay &&
+          rentPricePerDay > 0
+        ? Math.round(
+            ((originalRentPricePerDay - rentPricePerDay) / originalRentPricePerDay) * 100,
+          )
+        : undefined;
 
   return {
     id: dto.id,
@@ -35,7 +52,15 @@ export function productFromDto(dto: ProductDto): Product {
     tags: dto.tags?.length ? dto.tags : undefined,
     badge:
       dto.badge ??
-      (dto.isOnPromotion ? 'sale' : dto.isNew ? 'new' : dto.isFeatured ? 'hot' : undefined),
+      (nested?.isOnPromotion || dto.isOnPromotion
+        ? 'sale'
+        : dto.isNew
+          ? 'new'
+          : dto.isFeatured
+            ? 'hot'
+            : undefined),
+    salePercent,
+    promotionEndsAt: nested?.promotionEndsAt,
     popular: dto.popular ?? dto.isFeatured,
   };
 }

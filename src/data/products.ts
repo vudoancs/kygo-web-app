@@ -26,6 +26,7 @@ export interface Product {
   style: string[];
   badge?: 'new' | 'sale' | 'hot';
   salePercent?: number;
+  promotionEndsAt?: string;
   tags?: string[];
   unavailableDates?: string[]; // ISO date strings
   popular?: boolean;

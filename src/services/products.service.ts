@@ -31,6 +31,8 @@ export type FetchProductsParams = {
   isNew?: boolean;
   /** Chỉ sản phẩm đang khuyến mãi */
   onPromotion?: boolean;
+  /** Section homepage: campaign showOnHomepage + fallback isOnPromotion */
+  homepageOnly?: boolean;
   /** Trường sắp xếp — mặc định backend: sku desc */
   sortBy?: 'sku' | 'createdAt' | 'price' | 'featured' | 'onPromotionAt';
   sortOrder?: 'asc' | 'desc';
@@ -65,6 +67,7 @@ function appendQuery(sp: URLSearchParams, params: FetchProductsParams): void {
   if (params.featured === true) sp.set('featured', 'true');
   if (params.isNew === true) sp.set('isNew', 'true');
   if (params.onPromotion === true) sp.set('onPromotion', 'true');
+  if (params.homepageOnly === true) sp.set('homepageOnly', 'true');
   if (params.sortBy) sp.set('sortBy', params.sortBy);
   if (params.sortOrder) sp.set('sortOrder', params.sortOrder);
 }

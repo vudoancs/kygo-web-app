@@ -267,6 +267,23 @@ const ProductDetail = () => {
       image: resolveProductImage(product.image),
       size: selectedSize,
       price: actionType === 'buy' ? product.buyPrice : calculateRentalTotal(),
+      ...(actionType === 'rent' &&
+      product.originalRentPricePerDay &&
+      product.originalRentPricePerDay > product.rentPricePerDay
+        ? {
+            originalPrice:
+              rentDuration === 1
+                ? Math.round(product.originalRentPricePerDay * 0.9)
+                : product.originalRentPricePerDay,
+            discountPercent: product.salePercent,
+          }
+        : actionType === 'buy' &&
+            product.originalBuyPrice &&
+            product.originalBuyPrice > product.buyPrice
+          ? {
+              originalPrice: product.originalBuyPrice,
+            }
+          : {}),
       ...(actionType === 'rent' && rentStartDate
         ? (() => {
             const startYmd = ymdInVn(rentStartDate);
@@ -467,6 +484,8 @@ const ProductDetail = () => {
                     <ProductPriceLine
                       price={product.rentPricePerDay}
                       originalPrice={product.originalRentPricePerDay ?? product.originalRentPriceDanang}
+                      discountPercent={product.salePercent}
+                      promotionEndsAt={product.promotionEndsAt}
                       tone="accent"
                       size="xl"
                       className="justify-end"

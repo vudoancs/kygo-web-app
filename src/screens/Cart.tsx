@@ -129,11 +129,21 @@ const Cart = () => {
                 })()}
 
                 {/* Price */}
-                <div className="flex items-baseline gap-2 mt-2">
+                <div className="flex flex-wrap items-baseline gap-2 mt-2">
                   <span className="text-sm text-gray-600">
                     {item.type === 'rent' ? t('cart.rentalPrice') : t('cart.price')}:
                   </span>
+                  {item.originalPrice && item.originalPrice > item.price ? (
+                    <span className="text-sm text-gray-400 line-through">
+                      {formatPrice(item.originalPrice)}
+                    </span>
+                  ) : null}
                   <span className="font-semibold text-gray-900">{formatPrice(item.price)}</span>
+                  {item.discountPercent && item.discountPercent > 0 ? (
+                    <span className="text-xs font-medium text-[#b8465f]">
+                      −{item.discountPercent}%
+                    </span>
+                  ) : null}
                 </div>
               </div>
             </div>
