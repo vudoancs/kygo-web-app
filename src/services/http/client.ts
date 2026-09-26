@@ -32,6 +32,7 @@ function normalizeErrorBody(status: number, raw: unknown): ApiErrorBody {
       statusCode: typeof m.statusCode === 'number' ? m.statusCode : status,
       message: (m.message as string | string[]) ?? resStatusText(status),
       error: typeof m.error === 'string' ? m.error : undefined,
+      code: typeof m.code === 'string' ? m.code : undefined,
     };
   }
   return { statusCode: status, message: resStatusText(status) };

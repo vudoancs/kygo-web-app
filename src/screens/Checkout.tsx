@@ -6,7 +6,10 @@ import { CreditCard, Wallet, Building2, MapPin, User as UserIcon } from 'lucide-
 import { useAppContext } from '@/modules/app-state';
 import { checkoutWeb } from '@/services/orders.service';
 import { fetchMyProfile } from '@/services/users.service';
-import { getErrorMessage } from '@/services/http/errors';
+import { getErrorMessage, HttpError } from '@/services/http/errors';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCartPriceRefresh } from '@/hooks/use-cart-price-refresh';
+import { productKeys } from '@/hooks/use-products-query';
 import { isPublicApiConfigured } from '@/libs/env';
 import { ProductImage } from '@/components/ProductImage';
 import {
@@ -18,6 +21,8 @@ import { DEFAULT_PICKUP_TIME, DEFAULT_RETURN_TIME } from '@/libs/vn-date';
 const Checkout = () => {
   const { cart, user, clearCart, login } = useAppContext();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const priceRefresh = useCartPriceRefresh();
 
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('pickup');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'transfer' | 'online'>('cod');
@@ -182,7 +187,16 @@ const Checkout = () => {
       setSuccessOpen(true);
       clearCart();
     } catch (err) {
-      alert(getErrorMessage(err));
+      if (
+        err instanceof HttpError &&
+        (err.body?.code === 'ORDER_PRICE_STALE' || err.message === 'order.price_stale')
+      ) {
+        // Giá thuê đã đổi (giảm giá bắt đầu/kết thúc) → tải lại giá, khách xem lại rồi đặt lại.
+        await queryClient.invalidateQueries({ queryKey: productKeys.all });
+        alert('Giá đã thay đổi, vui lòng kiểm tra lại giỏ hàng trước khi đặt hàng.');
+      } else {
+        alert(getErrorMessage(err));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -224,6 +238,11 @@ const Checkout = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="font-serif text-3xl font-bold text-gray-900 mb-8">Thanh toán</h1>
+      {priceRefresh.changedCount > 0 ? (
+        <div role="status" className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Giá thuê của một số sản phẩm đã được cập nhật theo chương trình giảm giá hiện tại.
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -485,7 +504,7 @@ const Checkout = () => {
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || priceRefresh.isRefreshing}
                 className="w-full bg-[#b8465f] hover:bg-[#9d3a50] disabled:opacity-60 text-white py-3 px-6 rounded-lg font-semibold transition-colors"
               >
                 {submitting ? 'Đang gửi…' : 'Đặt hàng'}

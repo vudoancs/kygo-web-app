@@ -7,6 +7,11 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Giá thuê giảm + giá gốc gạch ngang chỉ hiển thị khi giảm giá đang hiệu lực (server tính theo lịch); trước/sau lịch hiển thị giá gốc — card, chi tiết, listing, khuyến mãi.
+- Giỏ hàng / thanh toán làm mới giá dòng thuê theo API khi mở trang và báo khi giá thay đổi; lỗi `order.price_stale` khi đặt → tải lại giá và nhắc khách kiểm tra lại.
+
 ### Added
 
 - Giá thuê hiệu lực từ API `pricing` (strike, %, hết KM); badge SALE trên card; cart/checkout hiện giá gốc khi có KM.

@@ -26,6 +26,7 @@ import ProductCardMobile from '../components/ProductCardMobile';
 import { ProductImage } from '@/components/ProductImage';
 import { ProductPriceLine } from '@/components/ProductPriceLine';
 import { resolveProductImage } from '@/libs/product-image';
+import { rentCartPricing } from '@/modules/product/lib/rent-cart-price';
 
 const FAVORITE_STORAGE_KEY = 'kygo:favorites:productIds';
 
@@ -236,10 +237,7 @@ const ProductDetail = () => {
     
     // Giá 1 lần thuê mặc định là gói 3 ngày.
     // Thuê 1 ngày: giảm 10%.
-    const base3Days = product.rentPricePerDay;
-    const rentalPrice = rentDuration === 1 ? Math.round(base3Days * 0.9) : base3Days;
-
-    return rentalPrice;
+    return rentCartPricing(product, rentDuration).price;
   };
 
   const handleAddToCart = () => {
@@ -267,16 +265,11 @@ const ProductDetail = () => {
       image: resolveProductImage(product.image),
       size: selectedSize,
       price: actionType === 'buy' ? product.buyPrice : calculateRentalTotal(),
-      ...(actionType === 'rent' &&
-      product.originalRentPricePerDay &&
-      product.originalRentPricePerDay > product.rentPricePerDay
-        ? {
-            originalPrice:
-              rentDuration === 1
-                ? Math.round(product.originalRentPricePerDay * 0.9)
-                : product.originalRentPricePerDay,
-            discountPercent: product.salePercent,
-          }
+      ...(actionType === 'rent'
+        ? (() => {
+            const { originalPrice, discountPercent } = rentCartPricing(product, rentDuration);
+            return originalPrice ? { originalPrice, discountPercent } : {};
+          })()
         : actionType === 'buy' &&
             product.originalBuyPrice &&
             product.originalBuyPrice > product.buyPrice

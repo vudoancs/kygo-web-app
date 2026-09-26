@@ -7,10 +7,12 @@ import { Trash2, ShoppingBag } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ProductImage } from '@/components/ProductImage';
+import { useCartPriceRefresh } from '@/hooks/use-cart-price-refresh';
 import { DEFAULT_PICKUP_TIME, DEFAULT_RETURN_TIME } from '@/libs/vn-date';
 
 const Cart = () => {
   const { cart, removeFromCart } = useAppContext();
+  const priceRefresh = useCartPriceRefresh();
   const router = useRouter();
   const { language, t } = useLanguage();
   const [discountCode, setDiscountCode] = useState('');
@@ -53,6 +55,11 @@ const Cart = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="font-serif text-3xl font-bold text-gray-900 mb-8">Giỏ hàng</h1>
+      {priceRefresh.changedCount > 0 ? (
+        <div role="status" className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Giá thuê của một số sản phẩm đã được cập nhật theo chương trình giảm giá hiện tại.
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}

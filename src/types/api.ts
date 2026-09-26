@@ -8,6 +8,8 @@ export interface ApiErrorBody {
   statusCode: number;
   message: string | string[];
   error?: string;
+  /** Mã lỗi nghiệp vụ (vd. `ORDER_PRICE_STALE`). */
+  code?: string;
 }
 
 export type ApiResult<T> =

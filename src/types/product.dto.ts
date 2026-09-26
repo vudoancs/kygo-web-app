@@ -55,6 +55,11 @@ export interface ProductDto {
     promotionName?: string;
     promotionStartAt?: string;
     promotionEndsAt?: string;
+    /** Giảm giá thuê theo SP đang hiệu lực (server tính theo discountStartAt/discountEndAt). */
+    isRentalDiscountActive?: boolean;
+    /** ISO UTC — chỉ có khi giảm giá đang hiệu lực. End exclusive. */
+    rentalDiscountStartAt?: string;
+    rentalDiscountEndAt?: string;
   };
   rentalCalendar?: ProductRentalCalendarDto;
 }

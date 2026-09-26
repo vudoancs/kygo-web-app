@@ -13,10 +13,12 @@ export function productFromDto(dto: ProductDto): Product {
     nested?.effectiveRentalPrice ??
     dto.rentPricePerDay ??
     (buyPrice > 0 ? Math.max(1, Math.round(buyPrice * 0.1)) : 0);
-  const originalRentPricePerDay =
-    nested?.isOnPromotion && nested.originalRentalPrice > rentPricePerDay
+  // Có `pricing` từ ERP → chỉ gạch giá gốc khi giảm giá đang hiệu lực (trước/sau lịch → giá gốc, không gạch).
+  const originalRentPricePerDay = nested
+    ? nested.isOnPromotion && nested.originalRentalPrice > rentPricePerDay
       ? nested.originalRentalPrice
-      : dto.originalRentPricePerDay;
+      : undefined
+    : dto.originalRentPricePerDay;
   const salePercent =
     nested?.isOnPromotion && nested.discountPercent > 0
       ? nested.discountPercent
