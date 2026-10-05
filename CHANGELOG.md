@@ -9,6 +9,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Form đăng nhập email / mật khẩu trên `/login` gọi `POST /auth/login` thật (trước đây chỉ là giao diện): validate email + mật khẩu, trạng thái đang đăng nhập, lưu token như đăng nhập Google (`persistAuthSession`), cập nhật app-state và chuyển về `?redirect=`. Lỗi hiển thị chung "Email hoặc mật khẩu không đúng." (không phân biệt tài khoản tồn tại).
 - Quên / đặt lại mật khẩu: link **Quên mật khẩu?** trên `/login` → `/forgot-password` (xác nhận chung chung, đếm ngược gửi lại 60s, hướng dẫn cho tài khoản đăng ký bằng Google) và `/reset-password` (token từ `#token=`, xoá khỏi URL ngay sau khi đọc, không lưu localStorage; hiện/ẩn mật khẩu; chính sách 8–12 ký tự không khoảng trắng; trạng thái liên kết không hợp lệ / hết hạn). Thành công → `/login?reset=success`. Header `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, `noindex`. API: `POST /auth/forgot-password`, `POST /auth/reset-password`.
 
 ### Changed

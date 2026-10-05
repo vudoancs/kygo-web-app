@@ -6,11 +6,23 @@ export interface LoginPayload {
   password: string;
 }
 
-/** Phản hồi mẫu từ NestJS JWT — chỉnh field theo DTO backend. */
+/** User trả về từ API đăng nhập (User.toObject() — không có hash). */
+export type ApiUserInfo = Record<string, unknown> & {
+  _id?: unknown;
+  id?: unknown;
+  name?: unknown;
+  fullName?: unknown;
+  email?: unknown;
+  avatar?: unknown;
+  phoneNumber?: unknown;
+};
+
+/** Phản hồi `POST /auth/login` (AuthService.login) và `/auth/refresh`. */
 export interface AuthTokensDto {
   accessToken: string;
   refreshToken?: string;
   expiresIn?: number;
+  user?: ApiUserInfo;
 }
 
 export async function loginRequest(payload: LoginPayload): Promise<AuthTokensDto> {

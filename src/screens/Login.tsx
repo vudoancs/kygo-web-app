@@ -3,10 +3,14 @@
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
 import { useAppContext } from '@/modules/app-state';
+import type { AppUser } from '@/modules/app-state/context/app-context';
 import { getGoogleClientId } from '@/libs/env';
 import { httpRequestOrThrow } from '@/services/http/client';
+import { HttpError } from '@/services/http/errors';
 import { setTokens } from '@/modules/auth/token-storage';
+import { loginRequest, persistAuthSession, type ApiUserInfo } from '@/modules/auth/auth.service';
 
 type GoogleTokenResponse = {
   access_token?: string;
@@ -37,21 +41,27 @@ type WindowWithGoogle = Window & {
   google?: GoogleIdentity;
 };
 
-type ApiUserInfo = Record<string, unknown> & {
-  _id?: unknown;
-  id?: unknown;
-  name?: unknown;
-  fullName?: unknown;
-  email?: unknown;
-  avatar?: unknown;
-  phoneNumber?: unknown;
-};
-
 type LoginGoogleResponse = {
   accessToken: string;
   userInfo?: ApiUserInfo;
   user?: ApiUserInfo;
 };
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type PasswordLoginValues = { email: string; password: string };
+
+/** Map user từ API (Google / email-mật khẩu) sang AppUser của app-state. */
+function toAppUser(info: ApiUserInfo, fallbackEmail = ''): AppUser {
+  return {
+    id: String(info._id ?? info.id ?? ''),
+    name: String(info.name ?? info.fullName ?? info.email ?? 'User'),
+    email: String(info.email ?? fallbackEmail),
+    avatar: typeof info.avatar === 'string' ? info.avatar : undefined,
+    phoneNumber:
+      typeof info.phoneNumber === 'string' && info.phoneNumber.trim() ? info.phoneNumber.trim() : undefined,
+  };
+}
 
 const Login = () => {
   const router = useRouter();
@@ -62,6 +72,33 @@ const Login = () => {
   const resetSucceeded = searchParams?.get('reset') === 'success';
   const [googleLoading, setGoogleLoading] = useState(false);
   const tokenClientRef = useRef<GoogleTokenClient | null>(null);
+  const [passwordLoginError, setPasswordLoginError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<PasswordLoginValues>({ defaultValues: { email: '', password: '' } });
+
+  const handlePasswordLogin = async (values: PasswordLoginValues) => {
+    setPasswordLoginError(null);
+    const email = values.email.trim().toLowerCase();
+    try {
+      const result = await loginRequest({ email, password: values.password });
+      if (!result?.accessToken) throw new Error('Thiếu accessToken từ API');
+      persistAuthSession(result);
+      login(toAppUser(result.user ?? {}, email));
+      router.push(redirect);
+    } catch (e) {
+      // Không phân biệt "không có tài khoản" / "sai mật khẩu" trên UI.
+      if (e instanceof HttpError && e.status === 400) {
+        setPasswordLoginError('Email hoặc mật khẩu không đúng.');
+      } else if (e instanceof HttpError && e.status === 429) {
+        setPasswordLoginError('Bạn đã thử quá nhiều lần. Vui lòng thử lại sau.');
+      } else {
+        setPasswordLoginError('Không thể đăng nhập. Vui lòng thử lại.');
+      }
+    }
+  };
 
   const loadGoogleScript = async () => {
     if (typeof window === 'undefined') return;
@@ -125,19 +162,7 @@ const Login = () => {
               // Lưu JWT để gọi API (My Orders, checkout...)
               setTokens(result.accessToken);
 
-              const info = result.userInfo ?? result.user ?? {};
-              const appUser = {
-                id: String(info._id ?? info.id ?? ''),
-                name: String(info.name ?? info.fullName ?? info.email ?? 'User'),
-                email: String(info.email ?? ''),
-                avatar: typeof info.avatar === 'string' ? info.avatar : undefined,
-                phoneNumber:
-                  typeof info.phoneNumber === 'string' && info.phoneNumber.trim()
-                    ? info.phoneNumber.trim()
-                    : undefined,
-              };
-
-              login(appUser);
+              login(toAppUser(result.userInfo ?? result.user ?? {}));
               router.push(redirect);
             } catch (e) {
               alert(e instanceof Error ? e.message : 'Đăng nhập Google thất bại');
@@ -210,22 +235,44 @@ const Login = () => {
           </div>
 
           {/* Email/Password Form */}
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit(handlePasswordLogin)} noValidate>
+            {passwordLoginError && (
+              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {passwordLoginError}
+              </div>
+            )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
               <input
+                id="login-email"
                 type="email"
+                autoComplete="email"
                 placeholder="email@example.com"
+                aria-invalid={errors.email ? 'true' : 'false'}
+                {...register('email', {
+                  required: 'Vui lòng nhập email',
+                  validate: (v) => EMAIL_PATTERN.test(v.trim()) || 'Email không hợp lệ',
+                })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20 focus:border-[#b8465f]"
               />
+              {errors.email && <p className="mt-1.5 text-sm text-red-600">{errors.email.message}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mật khẩu</label>
+              <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-2">
+                Mật khẩu
+              </label>
               <input
+                id="login-password"
                 type="password"
+                autoComplete="current-password"
                 placeholder="••••••••"
+                aria-invalid={errors.password ? 'true' : 'false'}
+                {...register('password', { required: 'Vui lòng nhập mật khẩu' })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#b8465f]/20 focus:border-[#b8465f]"
               />
+              {errors.password && <p className="mt-1.5 text-sm text-red-600">{errors.password.message}</p>}
             </div>
 
             <div className="flex items-center justify-between text-sm">
@@ -240,9 +287,10 @@ const Login = () => {
 
             <button
               type="submit"
-              className="w-full bg-[#b8465f] hover:bg-[#9d3a50] text-white py-3 px-6 rounded-lg font-semibold transition-colors"
+              disabled={isSubmitting}
+              className="w-full bg-[#b8465f] hover:bg-[#9d3a50] text-white py-3 px-6 rounded-lg font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Đăng nhập
+              {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </button>
           </form>
 
