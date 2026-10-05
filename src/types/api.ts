@@ -10,6 +10,8 @@ export interface ApiErrorBody {
   error?: string;
   /** Mã lỗi nghiệp vụ (vd. `ORDER_PRICE_STALE`). */
   code?: string;
+  /** Lỗi validate theo field (HttpExceptionFilter), vd. `{ phoneNumber: 'Số điện thoại không hợp lệ.' }`. */
+  fieldErrors?: Record<string, string>;
 }
 
 export type ApiResult<T> =

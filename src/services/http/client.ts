@@ -33,9 +33,18 @@ function normalizeErrorBody(status: number, raw: unknown): ApiErrorBody {
       message: (m.message as string | string[]) ?? resStatusText(status),
       error: typeof m.error === 'string' ? m.error : undefined,
       code: typeof m.code === 'string' ? m.code : undefined,
+      fieldErrors: toFieldErrors(m.fieldErrors),
     };
   }
   return { statusCode: status, message: resStatusText(status) };
+}
+
+function toFieldErrors(raw: unknown): Record<string, string> | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const entries = Object.entries(raw as Record<string, unknown>).filter(
+    (entry): entry is [string, string] => typeof entry[1] === 'string',
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 function resStatusText(status: number): string {

@@ -25,11 +25,11 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <Link
-        href="/my-orders"
+        href="/account/profile"
         className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#b8465f] mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
-        Tài khoản
+        Thông tin tài khoản
       </Link>
       <div className="mb-6">
         <h1 className="font-serif text-3xl font-bold text-gray-900">Đổi mật khẩu</h1>

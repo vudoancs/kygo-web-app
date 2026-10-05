@@ -117,8 +117,19 @@ const Header = () => {
               onClick={() => (user ? router.push('/my-orders') : router.push('/login'))}
               className="hidden lg:block text-gray-700 hover:text-[#b8465f] transition-colors"
               aria-label="User account"
+              title={user?.name || undefined}
             >
-              <User className="w-5 h-5" />
+              {user?.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="h-6 w-6 rounded-full object-cover ring-1 ring-gray-200"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <User className="w-5 h-5" />
+              )}
             </button>
 
             {/* Cart */}
@@ -285,6 +296,22 @@ const Header = () => {
 
             {/* User Account in Mobile Menu */}
             <div className="border-t border-gray-200 mt-4 pt-4">
+              {user && (
+                <div className="flex items-center gap-3 py-2">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-rose-100 text-sm font-semibold text-[#b8465f]">
+                    {user.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.avatar} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      (user.name || user.email).charAt(0).toUpperCase()
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-gray-900">{user.name || user.email}</span>
+                    <span className="block truncate text-xs text-gray-500">{user.email}</span>
+                  </span>
+                </div>
+              )}
               <Link
                 href={user ? '/my-orders' : '/login'}
                 onClick={() => setMobileMenuOpen(false)}
@@ -292,6 +319,15 @@ const Header = () => {
               >
                 {user ? t('nav.myAccount') : t('nav.login')}
               </Link>
+              {user && (
+                <Link
+                  href="/account/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-3 text-gray-700 hover:text-[#b8465f] font-medium"
+                >
+                  {t('nav.accountInfo')}
+                </Link>
+              )}
               {user && (
                 <Link
                   href="/account/change-password"

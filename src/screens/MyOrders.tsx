@@ -14,6 +14,7 @@ import {
   Copy,
   Check,
   KeyRound,
+  UserRound,
 } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { useMyOrdersQuery } from '@/hooks/use-orders-query';
@@ -267,13 +268,22 @@ const MyOrders = () => {
           <h1 className="font-serif text-3xl font-bold text-gray-900">Đơn hàng của tôi</h1>
           <p className="text-gray-600 mt-2">Quản lý đơn hàng và theo dõi lịch thuê</p>
         </div>
-        <Link
-          href="/account/change-password"
-          className="inline-flex items-center gap-2 self-start rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:border-[#b8465f] hover:text-[#b8465f] transition-colors sm:self-auto"
-        >
-          <KeyRound className="h-4 w-4" />
-          Đổi mật khẩu
-        </Link>
+        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+          <Link
+            href="/account/profile"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:border-[#b8465f] hover:text-[#b8465f] transition-colors"
+          >
+            <UserRound className="h-4 w-4" />
+            Thông tin tài khoản
+          </Link>
+          <Link
+            href="/account/change-password"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:border-[#b8465f] hover:text-[#b8465f] transition-colors"
+          >
+            <KeyRound className="h-4 w-4" />
+            Đổi mật khẩu
+          </Link>
+        </div>
       </div>
 
       {myOrdersQuery.isPending ? (
