@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/modules/app-state';
 import { getGoogleClientId } from '@/libs/env';
@@ -57,6 +58,8 @@ const Login = () => {
   const searchParams = useSearchParams();
   const { login } = useAppContext();
   const redirect = searchParams?.get('redirect') || '/';
+  // Trang đặt lại mật khẩu chuyển về /login?reset=success.
+  const resetSucceeded = searchParams?.get('reset') === 'success';
   const [googleLoading, setGoogleLoading] = useState(false);
   const tokenClientRef = useRef<GoogleTokenClient | null>(null);
 
@@ -162,6 +165,12 @@ const Login = () => {
             <p className="text-gray-600">Đăng nhập để tiếp tục</p>
           </div>
 
+          {resetSucceeded && (
+            <div role="status" className="mb-6 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+              Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.
+            </div>
+          )}
+
           {/* Google Login Button */}
           <button
             type="button"
@@ -224,9 +233,9 @@ const Login = () => {
                 <input type="checkbox" className="rounded border-gray-300 text-[#b8465f] focus:ring-[#b8465f]" />
                 <span className="text-gray-600">Ghi nhớ đăng nhập</span>
               </label>
-              <a href="#" className="text-[#b8465f] hover:underline">
+              <Link href="/forgot-password" className="text-[#b8465f] hover:underline">
                 Quên mật khẩu?
-              </a>
+              </Link>
             </div>
 
             <button

@@ -7,6 +7,10 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Quên / đặt lại mật khẩu: link **Quên mật khẩu?** trên `/login` → `/forgot-password` (xác nhận chung chung, đếm ngược gửi lại 60s, hướng dẫn cho tài khoản đăng ký bằng Google) và `/reset-password` (token từ `#token=`, xoá khỏi URL ngay sau khi đọc, không lưu localStorage; hiện/ẩn mật khẩu; chính sách 8–12 ký tự không khoảng trắng; trạng thái liên kết không hợp lệ / hết hạn). Thành công → `/login?reset=success`. Header `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, `noindex`. API: `POST /auth/forgot-password`, `POST /auth/reset-password`.
+
 ### Changed
 
 - Giá thuê giảm + giá gốc gạch ngang chỉ hiển thị khi giảm giá đang hiệu lực (server tính theo lịch); trước/sau lịch hiển thị giá gốc — card, chi tiết, listing, khuyến mãi.
