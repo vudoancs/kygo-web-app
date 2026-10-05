@@ -90,3 +90,12 @@ export async function changePasswordRequest(currentPassword: string, newPassword
     body: { currentPassword, newPassword },
   });
 }
+
+/** Response của GET /auth/password-status. `hasPassword=false` → tài khoản chỉ đăng nhập Google. */
+export interface PasswordStatusResponse {
+  hasPassword: boolean;
+}
+
+export async function passwordStatusRequest(): Promise<PasswordStatusResponse> {
+  return httpRequestOrThrow<PasswordStatusResponse>('/auth/password-status', { method: 'GET', auth: true });
+}

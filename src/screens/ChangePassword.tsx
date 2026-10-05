@@ -7,9 +7,8 @@ import { useForm } from 'react-hook-form';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, ArrowLeft, Eye, EyeOff, Info, KeyRound, ShieldCheck, User as UserIcon } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
-import { logoutSession, PASSWORD_POLICY } from '@/modules/auth/auth.service';
+import { logoutSession, PASSWORD_POLICY, passwordStatusRequest } from '@/modules/auth/auth.service';
 import { classifyChangePasswordError, useChangePassword } from '@/modules/auth/use-change-password';
-import { fetchMyProfile } from '@/services/users.service';
 
 type FormValues = { currentPassword: string; newPassword: string; confirmPassword: string };
 type FieldName = keyof FormValues;
@@ -84,8 +83,8 @@ const ChangePassword = () => {
   const [googleOnly, setGoogleOnly] = useState(false);
 
   const profileQuery = useQuery({
-    queryKey: ['users', 'profile'],
-    queryFn: fetchMyProfile,
+    queryKey: ['auth', 'password-status'],
+    queryFn: passwordStatusRequest,
     enabled: Boolean(user),
     staleTime: 0,
   });
