@@ -9,6 +9,11 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Trang `/account/change-password` (**Đổi mật khẩu**; link từ "Đơn hàng của tôi" và menu mobile khi đã đăng nhập): mật khẩu hiện tại / mới / xác nhận, hiện/ẩn, `autocomplete` `current-password` / `new-password`, chính sách 8–12 ký tự không khoảng trắng và khác mật khẩu hiện tại, chặn gửi trùng khi đang xử lý, cảnh báo đăng xuất khỏi mọi thiết bị. Lỗi theo `code` backend (sai mật khẩu hiện tại, mật khẩu không hợp lệ, quá nhiều lần thử). Tài khoản chỉ Google (`hasPassword=false`) → hướng dẫn đăng nhập Google thay cho form. Thành công → xoá token, app-state, cache react-query và form, chuyển `/login?passwordChanged=1` ("Đổi mật khẩu thành công. Vui lòng đăng nhập lại."). API: `POST /auth/change-password`, `GET /users/profile`.
+
+
+### Added
+
 - Form đăng nhập email / mật khẩu trên `/login` gọi `POST /auth/login` thật (trước đây chỉ là giao diện): validate email + mật khẩu, trạng thái đang đăng nhập, lưu token như đăng nhập Google (`persistAuthSession`), cập nhật app-state và chuyển về `?redirect=`. Lỗi hiển thị chung "Email hoặc mật khẩu không đúng." (không phân biệt tài khoản tồn tại).
 - Quên / đặt lại mật khẩu: link **Quên mật khẩu?** trên `/login` → `/forgot-password` (xác nhận chung chung, đếm ngược gửi lại 60s, hướng dẫn cho tài khoản đăng ký bằng Google) và `/reset-password` (token từ `#token=`, xoá khỏi URL ngay sau khi đọc, không lưu localStorage; hiện/ẩn mật khẩu; chính sách 8–12 ký tự không khoảng trắng; trạng thái liên kết không hợp lệ / hết hạn). Thành công → `/login?reset=success`. Header `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, `noindex`. API: `POST /auth/forgot-password`, `POST /auth/reset-password`.
 

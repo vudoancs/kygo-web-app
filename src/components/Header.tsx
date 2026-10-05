@@ -292,6 +292,15 @@ const Header = () => {
               >
                 {user ? t('nav.myAccount') : t('nav.login')}
               </Link>
+              {user && (
+                <Link
+                  href="/account/change-password"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-3 text-gray-700 hover:text-[#b8465f] font-medium"
+                >
+                  {t('nav.changePassword')}
+                </Link>
+              )}
             </div>
           </nav>
         </div>

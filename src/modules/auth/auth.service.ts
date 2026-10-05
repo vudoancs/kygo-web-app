@@ -71,3 +71,22 @@ export async function resetPasswordRequest(token: string, newPassword: string): 
     body: { token, newPassword },
   });
 }
+
+/** Response của POST /auth/change-password (backend: PasswordChangeService). Không cấp phiên mới. */
+export interface ChangePasswordResponse {
+  success: true;
+  message: string;
+}
+
+/**
+ * Đổi mật khẩu của tài khoản đang đăng nhập (tài khoản lấy từ JWT, không gửi userId/email).
+ * Lỗi có `code` (HttpError.body.code): CURRENT_PASSWORD_INCORRECT / NEW_PASSWORD_SAME_AS_CURRENT (400),
+ * PASSWORD_NOT_SET / PASSWORD_CHANGE_CONFLICT (409), TOO_MANY_ATTEMPTS (429).
+ */
+export async function changePasswordRequest(currentPassword: string, newPassword: string): Promise<ChangePasswordResponse> {
+  return httpRequestOrThrow<ChangePasswordResponse>('/auth/change-password', {
+    method: 'POST',
+    auth: true,
+    body: { currentPassword, newPassword },
+  });
+}

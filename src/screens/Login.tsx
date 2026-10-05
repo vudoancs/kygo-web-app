@@ -70,6 +70,8 @@ const Login = () => {
   const redirect = searchParams?.get('redirect') || '/';
   // Trang đặt lại mật khẩu chuyển về /login?reset=success.
   const resetSucceeded = searchParams?.get('reset') === 'success';
+  // Trang đổi mật khẩu chuyển về /login?passwordChanged=1 (mọi phiên đã bị thu hồi).
+  const passwordChanged = searchParams?.get('passwordChanged') === '1';
   const [googleLoading, setGoogleLoading] = useState(false);
   const tokenClientRef = useRef<GoogleTokenClient | null>(null);
   const [passwordLoginError, setPasswordLoginError] = useState<string | null>(null);
@@ -193,6 +195,12 @@ const Login = () => {
           {resetSucceeded && (
             <div role="status" className="mb-6 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
               Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.
+            </div>
+          )}
+
+          {passwordChanged && (
+            <div role="status" className="mb-6 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+              Đổi mật khẩu thành công. Vui lòng đăng nhập lại.
             </div>
           )}
 

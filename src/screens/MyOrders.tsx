@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Package,
@@ -12,6 +13,7 @@ import {
   Wallet,
   Copy,
   Check,
+  KeyRound,
 } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { useMyOrdersQuery } from '@/hooks/use-orders-query';
@@ -260,9 +262,18 @@ const MyOrders = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="font-serif text-3xl font-bold text-gray-900">Đơn hàng của tôi</h1>
-        <p className="text-gray-600 mt-2">Quản lý đơn hàng và theo dõi lịch thuê</p>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-serif text-3xl font-bold text-gray-900">Đơn hàng của tôi</h1>
+          <p className="text-gray-600 mt-2">Quản lý đơn hàng và theo dõi lịch thuê</p>
+        </div>
+        <Link
+          href="/account/change-password"
+          className="inline-flex items-center gap-2 self-start rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:border-[#b8465f] hover:text-[#b8465f] transition-colors sm:self-auto"
+        >
+          <KeyRound className="h-4 w-4" />
+          Đổi mật khẩu
+        </Link>
       </div>
 
       {myOrdersQuery.isPending ? (
