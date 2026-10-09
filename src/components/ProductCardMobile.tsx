@@ -61,6 +61,7 @@ const ProductCardMobile: React.FC<ProductCardMobileProps> = ({ product }) => {
           promotionEndsAt={product.promotionEndsAt}
           tone="accent"
           size="sm"
+          promoLabel={t('products.promoPriceLabel')}
           labelClassName="text-xs text-gray-700 font-medium"
         />
       </div>

@@ -481,6 +481,7 @@ const ProductDetail = () => {
                       promotionEndsAt={product.promotionEndsAt}
                       tone="accent"
                       size="xl"
+                      promoLabel={t('products.promoPriceLabel')}
                       className="justify-end"
                     />
                   </div>

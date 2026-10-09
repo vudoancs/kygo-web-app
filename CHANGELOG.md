@@ -7,6 +7,10 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Giá thuê trên thẻ sản phẩm (desktop / mobile) và trang chi tiết: nhãn "Giá thuê" (bỏ "/ 1 lần"; EN "Rent Price", KO "대여 가격"). Khi có khuyến mãi, giá thuê ban đầu đậm, màu đen (gạch ngang) cạnh nhãn; dòng dưới "Chỉ còn: <giá KM> −x%". `ProductPriceLine` thêm prop `promoLabel`.
+
 ### Added
 
 - Trang `/account/profile` (**Thông tin tài khoản**; link trong menu mobile, "Đơn hàng của tôi" và nút quay lại của trang Đổi mật khẩu): ảnh đại diện (xem trước trước khi lưu, đổi / gỡ; JPEG/PNG/WebP, giới hạn theo `avatarPolicy` backend; tài khoản Google: ảnh tải lên thay ảnh Google, gỡ → dùng lại ảnh Google), họ tên (bắt buộc), email chỉ đọc kèm giải thích, SĐT (chuẩn hoá như backend), quốc gia / tỉnh-thành / quận-huyện. Mục "Đăng nhập và bảo mật": phương thức đăng nhập; có mật khẩu → link Đổi mật khẩu, chỉ Google → hướng dẫn Google. "Lưu thay đổi" / "Hủy" (tắt khi không đổi hoặc đang lưu), lỗi cạnh field (client + `fieldErrors` backend), giữ giá trị khi lỗi, cảnh báo `beforeunload` khi có thay đổi chưa lưu, thông báo "Cập nhật thông tin tài khoản thành công.". Sau khi lưu cập nhật app-state → avatar ở header + tên/ảnh trong menu mobile. API: `GET/PATCH /auth/me`, `POST/DELETE /auth/me/avatar`.

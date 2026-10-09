@@ -102,6 +102,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               promotionEndsAt={product.promotionEndsAt}
               tone="accent"
               size="xs"
+              promoLabel={t('products.promoPriceLabel')}
               labelClassName="text-[9px] lg:text-xs text-gray-500 font-normal"
             />
             {!product.rentByTime ? (
