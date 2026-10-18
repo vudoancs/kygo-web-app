@@ -290,6 +290,10 @@ const translations: Record<Language, any> = {
       error: 'Lỗi',
       success: 'Thành công',
       backToHome: 'Về trang chủ',
+      loadFailed: 'Không tải được dữ liệu',
+      retryHint: 'Vui lòng thử lại.',
+      retry: 'Tải lại',
+      apiNotConfigured: 'Chưa cấu hình API công khai (NEXT_PUBLIC_API_URL).',
     },
     styleTips: {
       title: 'Bí Quyết Mặc Đẹp',
@@ -572,6 +576,10 @@ const translations: Record<Language, any> = {
       error: 'Error',
       success: 'Success',
       backToHome: 'Back to Home',
+      loadFailed: 'Could not load data',
+      retryHint: 'Please try again.',
+      retry: 'Retry',
+      apiNotConfigured: 'Public API is not configured (NEXT_PUBLIC_API_URL).',
     },
     styleTips: {
       title: 'Dress Up Tips',
@@ -860,6 +868,10 @@ const translations: Record<Language, any> = {
       error: '오류',
       success: '성공',
       backToHome: '홈으로',
+      loadFailed: '데이터를 불러오지 못했습니다',
+      retryHint: '다시 시도해 주세요.',
+      retry: '다시 시도',
+      apiNotConfigured: '공개 API가 설정되지 않았습니다 (NEXT_PUBLIC_API_URL).',
     },
     styleTips: {
       title: '드레스 업 팁',

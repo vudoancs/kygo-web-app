@@ -4,7 +4,6 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import {
-  products,
   getLocalizedOccasions,
   getLocalizedStyles,
   occasionApiValueById,
@@ -18,6 +17,7 @@ import { useCmsPostsQuery } from '@/hooks/use-cms-posts-query';
 import { isPublicApiConfigured } from '@/libs/env';
 import { productFromDto } from '@/modules/product';
 import { Skeleton } from '@/components/ui/skeleton';
+import { QueryErrorCard } from '@/components/feedback/query-error-card';
 import { CMS_CATEGORY_CODES, getCmsCategoryPublicHref } from '@/config/cms-seo';
 
 const Home = () => {
@@ -41,12 +41,9 @@ const Home = () => {
   const localizedStyles = getLocalizedStyles(language);
 
   const newArrivals = useMemo(() => {
-    const fallback = products.filter((p) => p.badge === 'hot' || p.badge === 'new').slice(0, 8);
-    if (!api) return fallback;
-    if (newQuery.isSuccess) return (newQuery.data?.items ?? []).map(productFromDto);
-    if (newQuery.isError) return fallback;
-    return [];
-  }, [api, newQuery.isSuccess, newQuery.isError, newQuery.data]);
+    if (!api || !newQuery.isSuccess) return [];
+    return (newQuery.data?.items ?? []).map(productFromDto);
+  }, [api, newQuery.isSuccess, newQuery.data]);
 
   const onPromotion = useMemo(() => {
     if (!api || !onPromotionQuery.isSuccess) return [];
@@ -54,12 +51,9 @@ const Home = () => {
   }, [api, onPromotionQuery.isSuccess, onPromotionQuery.data]);
 
   const trending = useMemo(() => {
-    const fallback = products.filter((p) => p.popular).slice(0, 8);
-    if (!api) return fallback;
-    if (featuredQuery.isSuccess) return (featuredQuery.data?.items ?? []).map(productFromDto);
-    if (featuredQuery.isError) return fallback;
-    return [];
-  }, [api, featuredQuery.isSuccess, featuredQuery.isError, featuredQuery.data]);
+    if (!api || !featuredQuery.isSuccess) return [];
+    return (featuredQuery.data?.items ?? []).map(productFromDto);
+  }, [api, featuredQuery.isSuccess, featuredQuery.data]);
 
   const newLoading = api && newQuery.isPending;
   const onPromotionLoading = api && onPromotionQuery.isPending;
@@ -224,7 +218,9 @@ const Home = () => {
                 <Skeleton key={i} className="aspect-[3/4] w-full rounded-sm" />
               ))}
             </div>
-          ) : api && newQuery.isSuccess && newArrivals.length === 0 ? (
+          ) : !api || newQuery.isError ? (
+            <QueryErrorCard onRetry={api ? () => void newQuery.refetch() : undefined} />
+          ) : newArrivals.length === 0 ? (
             <div className="rounded-lg border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-600">
               {language === 'vi'
                 ? 'Chưa có sản phẩm được đánh dấu “Hàng mới”.'
@@ -333,7 +329,9 @@ const Home = () => {
                 <Skeleton key={i} className="aspect-[3/4] w-full rounded-sm" />
               ))}
             </div>
-          ) : api && featuredQuery.isSuccess && trending.length === 0 ? (
+          ) : !api || featuredQuery.isError ? (
+            <QueryErrorCard onRetry={api ? () => void featuredQuery.refetch() : undefined} />
+          ) : trending.length === 0 ? (
             <div className="rounded-lg border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-600">
               {language === 'vi'
                 ? 'Chưa có sản phẩm được đánh dấu “Nổi bật”.'

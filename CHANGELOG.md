@@ -9,6 +9,14 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Không còn hiện data mẫu khi gọi API thất bại (hoặc chưa cấu hình `NEXT_PUBLIC_API_URL`): `/products` (danh sách, filter brand/tag), `/product/[id]` (chi tiết, lịch thuê, SP tương tự), Home (Hàng mới / Nổi bật), `/events`, `/style-tips` hiện `QueryErrorCard` ("Không tải được dữ liệu" + nút "Tải lại" gọi `refetch`). Bỏ banner "đang hiển thị dữ liệu mẫu". `/product/[id]` lỗi 404 → "Không tìm thấy sản phẩm", lỗi khác → card lỗi. Menu header và chip danh mục tĩnh giữ nguyên.
+- `/post/[slug]`: lỗi tải (mạng / 5xx) hiện "Không tải được bài viết" thay vì "Không tìm thấy bài viết" (chỉ 404).
+- `/events/[slug]` và `/style-tips/[id]` chuyển hướng vĩnh viễn (308) sang `/post/[slug]` (bài viết CMS).
+
+### Removed
+
+- Data mẫu `src/data/events.ts`, `src/data/styleTips.ts`, mảng `products` trong `src/data/products.ts` (giữ interface `Product` và lookup dịp / phong cách); màn `EventDetail`, `StyleTipDetail`.
+
 - Giá thuê trên thẻ sản phẩm (desktop / mobile) và trang chi tiết: nhãn "Giá thuê" (bỏ "/ 1 lần"; EN "Rent Price", KO "대여 가격"). Khi có khuyến mãi, giá thuê ban đầu đậm, màu đen (gạch ngang) cạnh nhãn; dòng dưới "Chỉ còn: <giá KM> −x%". `ProductPriceLine` thêm prop `promoLabel`.
 
 ### Added

@@ -3,12 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { Clock, ChevronRight } from 'lucide-react';
-import { styleTips } from '../data/styleTips';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isPublicApiConfigured } from '@/libs/env';
 import { useCmsPostsQuery } from '@/hooks/use-cms-posts-query';
 import { CMS_CATEGORY_CODES, getCmsCategoryPublicHref } from '@/config/cms-seo';
 import { Skeleton } from '@/components/ui/skeleton';
+import { QueryErrorCard } from '@/components/feedback/query-error-card';
 
 const StyleTips = () => {
   const { language, t } = useLanguage();
@@ -22,26 +22,13 @@ const StyleTips = () => {
   const locale = language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'ko-KR';
   const listHref = getCmsCategoryPublicHref(CMS_CATEGORY_CODES.BEAUTY_TIPS);
 
-  const getLocalizedContent = (tip: (typeof styleTips)[0]) => {
-    return {
-      title: language === 'vi' ? tip.title : language === 'en' ? tip.titleEn : tip.titleKo,
-      excerpt: language === 'vi' ? tip.excerpt : language === 'en' ? tip.excerptEn : tip.excerptKo,
-      category: language === 'vi' ? tip.category : language === 'en' ? tip.categoryEn : tip.categoryKo,
-      tags: language === 'vi' ? tip.tags : language === 'en' ? tip.tagsEn : tip.tagsKo,
-    };
-  };
-
   const cmsItems = cmsQuery.data?.items ?? [];
   const showCms = api && cmsQuery.isSuccess && cmsItems.length > 0;
   const cmsEmpty = api && cmsQuery.isSuccess && cmsItems.length === 0;
-  const useMock = !api || cmsQuery.isError;
+  const cmsFailed = !api || cmsQuery.isError;
 
   const featuredCms = showCms ? cmsItems[0] : null;
   const otherCms = showCms ? cmsItems.slice(1) : [];
-
-  const featuredTip = styleTips[0];
-  const featuredContent = getLocalizedContent(featuredTip);
-  const otherTips = styleTips.slice(1);
 
   const bodyLoading = api && cmsQuery.isPending;
 
@@ -191,110 +178,8 @@ const StyleTips = () => {
       );
     }
 
-    if (useMock) {
-      return (
-        <>
-          <Link href={`/style-tips/${featuredTip.id}`} className="group mb-16 block">
-            <div className="grid transform gap-8 overflow-hidden rounded-2xl bg-white shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl md:grid-cols-2">
-              <div className="relative aspect-[4/3] overflow-hidden md:aspect-auto">
-                <img
-                  src={featuredTip.image}
-                  alt={featuredContent.title}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute left-4 top-4">
-                  <span className="rounded-full bg-[#b8465f] px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white shadow-lg">
-                    {t('styleTips.featured')}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-center p-6 md:p-8 lg:p-10">
-                <div className="mb-4 flex items-center gap-3">
-                  <span className="text-sm font-semibold uppercase tracking-wider text-[#b8465f]">
-                    {featuredContent.category}
-                  </span>
-                  <span className="text-gray-300">•</span>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="mr-1 h-4 w-4" />
-                    {featuredTip.readTime} {t('styleTips.minRead')}
-                  </div>
-                </div>
-
-                <h2 className="mb-4 font-serif text-2xl font-bold text-gray-900 transition-colors group-hover:text-[#b8465f] md:text-3xl lg:text-4xl">
-                  {featuredContent.title}
-                </h2>
-
-                <p className="mb-6 text-base leading-relaxed text-gray-600 md:text-lg">{featuredContent.excerpt}</p>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center text-sm text-gray-500">{featuredTip.author}</div>
-
-                  <div className="flex items-center font-semibold text-[#b8465f] transition-all group-hover:gap-2">
-                    {t('styleTips.readMore')}
-                    <ChevronRight className="ml-1 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {otherTips.map((tip) => {
-              const content = getLocalizedContent(tip);
-              return (
-                <Link
-                  key={tip.id}
-                  href={`/style-tips/${tip.id}`}
-                  className="group transform rounded-xl bg-white shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    <img
-                      src={tip.image}
-                      alt={content.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                    <div className="absolute right-4 top-4">
-                      <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold uppercase text-[#b8465f] backdrop-blur-sm">
-                        {content.category}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <div className="mb-3 flex items-center gap-2 text-sm text-gray-500">
-                      <Clock className="h-4 w-4" />
-                      {tip.readTime} {t('styleTips.minRead')}
-                      <span className="text-gray-300">•</span>
-                      <span>{new Date(tip.date).toLocaleDateString(locale)}</span>
-                    </div>
-
-                    <h3 className="mb-3 line-clamp-2 font-serif text-xl font-bold text-gray-900 transition-colors group-hover:text-[#b8465f]">
-                      {content.title}
-                    </h3>
-
-                    <p className="mb-4 line-clamp-3 leading-relaxed text-gray-600">{content.excerpt}</p>
-
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      {content.tags.slice(0, 2).map((tag, index) => (
-                        <span key={index} className="rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-[#b8465f]">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center text-sm font-semibold text-[#b8465f] transition-all group-hover:gap-2">
-                      {t('styleTips.readMore')}
-                      <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </>
-      );
+    if (cmsFailed) {
+      return <QueryErrorCard onRetry={api ? () => void cmsQuery.refetch() : undefined} />;
     }
 
     return null;

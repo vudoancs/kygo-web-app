@@ -1,5 +1,11 @@
-import EventDetail from '@/screens/EventDetail';
+import { permanentRedirect } from 'next/navigation';
 
-export default function EventDetailPage() {
-  return <EventDetail />;
+type PageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+/** Chi tiết sự kiện là bài viết CMS — dùng chung trang `/post/[slug]`. */
+export default async function EventDetailPage(props: PageProps) {
+  const { slug } = await props.params;
+  permanentRedirect(`/post/${encodeURIComponent(slug)}`);
 }

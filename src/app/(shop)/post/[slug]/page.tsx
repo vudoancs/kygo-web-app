@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { fetchCmsPostBySlugPublic } from '@/services/cms.service';
 import { isPublicApiConfigured } from '@/libs/env';
 import { getCmsCategoryPath } from '@/config/cms-seo';
+import { HttpError } from '@/services/http/errors';
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -51,10 +52,25 @@ export default async function CmsPostPage(props: PageProps) {
   }
 
   let post = null;
+  let loadFailed = false;
   try {
     post = await fetchCmsPostBySlugPublic(slug);
-  } catch {
+  } catch (err) {
     post = null;
+    // 404 → "không tìm thấy"; lỗi khác (mạng, 5xx) → báo lỗi tải, không giả làm 404.
+    loadFailed = !(err instanceof HttpError && err.status === 404);
+  }
+
+  if (loadFailed) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <h1 className="text-2xl font-semibold text-gray-900">Không tải được bài viết</h1>
+        <p className="mt-2 text-gray-600">Vui lòng thử lại sau.</p>
+        <Link href={`/post/${encodeURIComponent(slug)}`} className="mt-4 inline-block text-[#b8465f] hover:underline">
+          Tải lại
+        </Link>
+      </div>
+    );
   }
 
   if (!post) {

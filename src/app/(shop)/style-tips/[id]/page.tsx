@@ -1,5 +1,11 @@
-import StyleTipDetail from '@/screens/StyleTipDetail';
+import { permanentRedirect } from 'next/navigation';
 
-export default function StyleTipDetailPage() {
-  return <StyleTipDetail />;
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
+
+/** Chi tiết mẹo làm đẹp là bài viết CMS — tham số được coi là slug, dùng chung trang `/post/[slug]`. */
+export default async function StyleTipDetailPage(props: PageProps) {
+  const { id } = await props.params;
+  permanentRedirect(`/post/${encodeURIComponent(id)}`);
 }

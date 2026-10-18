@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { SlidersHorizontal, Calendar, ChevronLeft, ChevronRight, Search, Palette, Shirt } from 'lucide-react';
-import { products } from '../data/products';
+import { QueryErrorCard } from '@/components/feedback/query-error-card';
 import ProductCard from '../components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -250,62 +250,15 @@ const ProductListing = () => {
   });
   const activeListQuery = isOnPromotionCollection ? onPromotionQuery : productsQuery;
 
-  const listFiltersActive = useMemo(
-    () =>
-      selectedOccasions.length > 0 ||
-      selectedStyles.length > 0 ||
-      selectedSizes.length > 0 ||
-      selectedColors.length > 0 ||
-      selectedBrands.length > 0 ||
-      selectedTags.length > 0 ||
-      appliedSearch.trim().length > 0 ||
-      filterType !== 'all' ||
-      Boolean(startDate && endDate),
-    [
-      selectedOccasions,
-      selectedStyles,
-      selectedSizes,
-      selectedColors,
-      selectedBrands,
-      selectedTags,
-      appliedSearch,
-      filterType,
-      startDate,
-      endDate,
-    ],
-  );
-
+  /** Không bao giờ thay bằng data mẫu: lỗi / chưa cấu hình API → danh sách rỗng + card lỗi. */
   const baseProducts = useMemo(() => {
-    if (!isApi) return products;
-    if (activeListQuery.isPending) return [];
-    if (activeListQuery.isSuccess && activeListQuery.data) {
-      const mapped = activeListQuery.data.items.map(productFromDto);
-      if (mapped.length > 0) return mapped;
-      if (listFiltersActive || (activeListQuery.data.total ?? 0) === 0) return [];
-      const pageFromApi = activeListQuery.data.page ?? 1;
-      if (pageFromApi <= 1) return products;
-      return [];
-    }
-    if (activeListQuery.isError) return products;
-    return products;
-  }, [
-    isApi,
-    listFiltersActive,
-    activeListQuery.data,
-    activeListQuery.isError,
-    activeListQuery.isPending,
-    activeListQuery.isSuccess,
-  ]);
+    if (!isApi || !activeListQuery.isSuccess || !activeListQuery.data) return [];
+    return activeListQuery.data.items.map(productFromDto);
+  }, [isApi, activeListQuery.data, activeListQuery.isSuccess]);
 
-  const brandOptions = useMemo(() => {
-    const fromApi = brandsQuery.data?.brands ?? [];
-    if (fromApi.length) return fromApi;
-    const set = new Set<string>();
-    for (const p of products) {
-      if (p.brand?.trim()) set.add(p.brand.trim());
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'vi'));
-  }, [brandsQuery.data?.brands]);
+  const listLoadFailed = !isApi || activeListQuery.isError;
+
+  const brandOptions = useMemo(() => brandsQuery.data?.brands ?? [], [brandsQuery.data?.brands]);
 
   const toggleBrand = (brand: string) => {
     setSelectedBrands((prev) =>
@@ -322,16 +275,8 @@ const ProductListing = () => {
       const s = String(tag || '').trim();
       if (s) set.add(s);
     }
-    if (!set.size && !isApi) {
-      for (const p of products) {
-        for (const tag of p.tags || []) {
-          const s = String(tag || '').trim();
-          if (s) set.add(s);
-        }
-      }
-    }
     return sortLoaiTags([...set], fromApi);
-  }, [isApi, tagsQuery.data?.tags, selectedTags, products]);
+  }, [tagsQuery.data?.tags, selectedTags]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -919,12 +864,6 @@ const ProductListing = () => {
         </h1>
       ) : null}
 
-      {isApi && activeListQuery.isError ? (
-        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-          Không kết nối được API sản phẩm — đang hiển thị dữ liệu mẫu.
-        </p>
-      ) : null}
-
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Desktop Sidebar */}
         <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -1171,6 +1110,10 @@ const ProductListing = () => {
             </div>
           )}
 
+          {listLoadFailed ? (
+            <QueryErrorCard onRetry={isApi ? () => void activeListQuery.refetch() : undefined} />
+          ) : null}
+
           {/* Product Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-6">
             {apiLoading
@@ -1188,7 +1131,7 @@ const ProductListing = () => {
           </div>
 
           {/* No Results */}
-          {filteredProducts.length === 0 && (
+          {!apiLoading && !listLoadFailed && filteredProducts.length === 0 && (
             <div className="text-center py-16">
               <p className="text-gray-500 text-lg">{t('listing.noResults')}</p>
             </div>

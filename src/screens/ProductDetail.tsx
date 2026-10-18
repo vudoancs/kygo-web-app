@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Heart, Share2, AlertCircle } from 'lucide-react';
 import type { Product } from '../data/products';
-import { products } from '../data/products';
 import { useAppContext } from '@/modules/app-state';
 import RentalCalendar from '../components/RentalCalendar';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -20,6 +19,8 @@ import {
   DEFAULT_RETURN_TIME,
 } from '@/libs/vn-date';
 import { isPublicApiConfigured } from '@/libs/env';
+import { HttpError } from '@/services/http/errors';
+import { QueryErrorCard } from '@/components/feedback/query-error-card';
 import { productFromDto } from '@/modules/product';
 import ProductCard from '../components/ProductCard';
 import ProductCardMobile from '../components/ProductCardMobile';
@@ -59,7 +60,6 @@ const ProductDetail = () => {
   const { addToCart, user } = useAppContext();
   const { language, t } = useLanguage();
 
-  const mockProduct = useMemo(() => products.find((p) => p.id === id), [id]);
   const detailQuery = useProductDetailQuery(id);
   const similarQuery = useSimilarProductsQuery(id, 4);
 
@@ -71,44 +71,22 @@ const ProductDetail = () => {
   );
 
   const product = useMemo((): Product | null => {
-    if (!isPublicApiConfigured()) {
-      return mockProduct ?? null;
-    }
-    if (detailQuery.isSuccess && detailQuery.data) {
-      return productFromDto(detailQuery.data);
-    }
-    if (detailQuery.isError || detailQuery.isPending) {
-      return mockProduct ?? null;
-    }
-    return mockProduct ?? null;
-  }, [
-    mockProduct,
-    detailQuery.data,
-    detailQuery.isError,
-    detailQuery.isPending,
-    detailQuery.isSuccess,
-  ]);
+    if (!isPublicApiConfigured() || !detailQuery.isSuccess || !detailQuery.data) return null;
+    return productFromDto(detailQuery.data);
+  }, [detailQuery.data, detailQuery.isSuccess]);
 
   const similarProducts = useMemo((): Product[] => {
-    if (!isPublicApiConfigured()) {
-      return products
-        .filter(
-          (p) =>
-            p.id !== product?.id &&
-            (p.category === product?.category ||
-              p.occasion.some((occ) => product?.occasion.includes(occ)) ||
-              p.style.some((st) => product?.style.includes(st))),
-        )
-        .slice(0, 4);
-    }
-    if (similarQuery.isSuccess && similarQuery.data?.items?.length) {
+    if (isPublicApiConfigured() && similarQuery.isSuccess && similarQuery.data?.items?.length) {
       return similarQuery.data.items.map(productFromDto);
     }
     return [];
-  }, [product?.category, product?.id, product?.occasion, product?.style, similarQuery.data, similarQuery.isSuccess]);
+  }, [similarQuery.data, similarQuery.isSuccess]);
 
-  const apiLoading =
-    isPublicApiConfigured() && detailQuery.isPending && !mockProduct;
+  const apiLoading = isPublicApiConfigured() && detailQuery.isPending;
+  /** Lỗi khác 404 (mạng, 5xx…) → hiện lỗi + Tải lại; 404 → "Không tìm thấy sản phẩm". */
+  const detailLoadFailed =
+    !isPublicApiConfigured() ||
+    (detailQuery.isError && !(detailQuery.error instanceof HttpError && detailQuery.error.status === 404));
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
@@ -140,11 +118,8 @@ const ProductDetail = () => {
   }, [rentalCalendarQuery.data, detailQuery.data?.rentalCalendar]);
 
   const unavailableSet = useMemo(() => {
-    const apiDates = rentalCalendarData?.unavailableDates ?? [];
-    const mockDates = product?.unavailableDates ?? [];
-    const merged = [...apiDates, ...mockDates.map((x) => x.slice(0, 10))];
-    return new Set(merged);
-  }, [product?.unavailableDates, rentalCalendarData?.unavailableDates]);
+    return new Set(rentalCalendarData?.unavailableDates ?? []);
+  }, [rentalCalendarData?.unavailableDates]);
 
   const rentedDatesForCalendar = useMemo(() => {
     const fromApi = rentalCalendarData?.rentedDates ?? [];
@@ -212,15 +187,18 @@ const ProductDetail = () => {
     );
   }
 
+  if (detailLoadFailed) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <QueryErrorCard onRetry={isPublicApiConfigured() ? () => void detailQuery.refetch() : undefined} />
+      </div>
+    );
+  }
+
   if (!product) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
         <p className="text-gray-500">Không tìm thấy sản phẩm</p>
-        {isPublicApiConfigured() && detailQuery.isError ? (
-          <p className="mt-2 text-sm text-amber-700">
-            Không tải được dữ liệu từ máy chủ. Kiểm tra API hoặc mã sản phẩm.
-          </p>
-        ) : null}
       </div>
     );
   }
@@ -354,12 +332,6 @@ const ProductDetail = () => {
         <span className="mx-2">/</span>
         <span className="text-gray-900">{product.name}</span>
       </div>
-
-      {isPublicApiConfigured() && detailQuery.isError && mockProduct?.id === product.id ? (
-        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-          Đang hiển thị dữ liệu mẫu — không lấy được chi tiết từ API.
-        </p>
-      ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Image Gallery */}
@@ -715,7 +687,7 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {product.unavailableDates && product.unavailableDates.length > 0 && (
+              {unavailableSet.size > 0 && (
                 <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
                   <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-amber-800">
