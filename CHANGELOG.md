@@ -7,6 +7,10 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Đăng nhập bằng tài khoản nội bộ:** backend giờ từ chối tài khoản web-admin (nhân viên) ở website bằng 403; màn đăng nhập báo rõ "Tài khoản nội bộ không dùng để đăng nhập website…" thay vì lỗi chung. Đăng nhập Google hiện thông báo từ backend. Web-app không cần gửi header `X-Kygo-Client` (thiếu header = `web`).
+
 ### Changed
 
 - Không còn hiện data mẫu khi gọi API thất bại (hoặc chưa cấu hình `NEXT_PUBLIC_API_URL`): `/products` (danh sách, filter brand/tag), `/product/[id]` (chi tiết, lịch thuê, SP tương tự), Home (Hàng mới / Nổi bật), `/events`, `/style-tips` hiện `QueryErrorCard` ("Không tải được dữ liệu" + nút "Tải lại" gọi `refetch`). Bỏ banner "đang hiển thị dữ liệu mẫu". `/product/[id]` lỗi 404 → "Không tìm thấy sản phẩm", lỗi khác → card lỗi. Menu header và chip danh mục tĩnh giữ nguyên.

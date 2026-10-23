@@ -94,6 +94,11 @@ const Login = () => {
       // Không phân biệt "không có tài khoản" / "sai mật khẩu" trên UI.
       if (e instanceof HttpError && e.status === 400) {
         setPasswordLoginError('Email hoặc mật khẩu không đúng.');
+      } else if (e instanceof HttpError && e.status === 403) {
+        // Tài khoản nội bộ (web-admin) không đăng nhập website.
+        setPasswordLoginError(
+          'Tài khoản nội bộ không dùng để đăng nhập website. Vui lòng đăng ký tài khoản khách hàng bằng email khác.',
+        );
       } else if (e instanceof HttpError && e.status === 429) {
         setPasswordLoginError('Bạn đã thử quá nhiều lần. Vui lòng thử lại sau.');
       } else {
