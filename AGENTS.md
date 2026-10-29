@@ -14,6 +14,8 @@ npm run lint
 
 No test runner is configured — do not add tests unless asked to set one up.
 
+Lint: CI runs `npm run lint:ci`, which fails when errors/warnings exceed `.eslint-baseline.json`. Do not raise the baseline; after a cleanup run `node scripts/lint-baseline.mjs --update`.
+
 ## Facts agents get wrong (verified 2026-10-29)
 
 - **No axios, no zod, no zustand, no next-intl.** Do not add them without asking.
