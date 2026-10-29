@@ -19,9 +19,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
-      - run: npm ci --ignore-scripts
+      # Lockfiles are not committed in this repo, so npm ci cannot be used.
+      - run: npm install --ignore-scripts --no-audit --no-fund
 
       # Fails only when errors/warnings exceed .eslint-baseline.json
       - run: npm run lint:ci
