@@ -27,6 +27,8 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       '@next/next/no-img-element': 'warn',
+      // warn, not error: ProductCard still has a placeholder console.log.
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
   eslintConfigPrettier,

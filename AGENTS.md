@@ -17,7 +17,8 @@ No test runner is configured — do not add tests unless asked to set one up.
 ## Facts agents get wrong (verified 2026-10-29)
 
 - **No axios, no zod, no zustand, no next-intl.** Do not add them without asking.
+- i18n is a home-made context: `const { t, language } = useLanguage()` from `@/contexts/LanguageContext` (locales `vi` | `en` | `ko`, dictionary inside that file). Only part of the app uses it (~14 files). In a component that already uses `useLanguage`, add new text via `t('ns.key')` and fill **all three** locales; elsewhere Vietnamese literals are acceptable — do not migrate unrelated screens.
 - HTTP: `httpRequestOrThrow<T>(path, { method, body, auth: true })` from `@/services/http/client`; unwrap with `unwrapKygoApiBody` (`@/libs/unwrap-api-body`); errors are `HttpError`. Reference: `src/services/users.service.ts`.
 - Services: `src/services/<resource>.service.ts`. Hooks: `src/hooks/`. Screens: `src/screens/`.
-- UI text is Vietnamese literals (no i18n library). Toast: `sonner`.
+- Toast: `sonner`.
 - Port JSX + Tailwind from `../Kygo-Web-UI/` without restyling.
