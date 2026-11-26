@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 - Chi tiết đơn hiển thị ngày giờ nhận và trả của từng sản phẩm thuê.
 
+### Added
+
+- Website hỗ trợ đo lượt xem trang bằng GA4 khi cấu hình `NEXT_PUBLIC_GA_MEASUREMENT_ID` cho bản build production. Các trang tài khoản, đơn hàng và khôi phục mật khẩu được loại khỏi phép đo.
+
 ### Fixed
 
 - **Đăng nhập bằng tài khoản nội bộ:** backend giờ từ chối tài khoản web-admin (nhân viên) ở website bằng 403; màn đăng nhập báo rõ "Tài khoản nội bộ không dùng để đăng nhập website…" thay vì lỗi chung. Đăng nhập Google hiện thông báo từ backend. Web-app không cần gửi header `X-Kygo-Client` (thiếu header = `web`).
