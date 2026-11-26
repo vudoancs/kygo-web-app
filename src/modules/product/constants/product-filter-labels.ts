@@ -1,0 +1,53 @@
+type FilterLanguage = 'vi' | 'en' | 'ko';
+type TranslatedLabel = Record<Exclude<FilterLanguage, 'vi'>, string>;
+
+const labels: ReadonlyMap<string, TranslatedLabel> = new Map([
+  ['Trắng', { en: 'White', ko: '흰색' }],
+  ['Kem', { en: 'Cream', ko: '크림색' }],
+  ['Nude', { en: 'Nude', ko: '누드색' }],
+  ['Be', { en: 'Beige', ko: '베이지색' }],
+  ['Đỏ', { en: 'Red', ko: '빨간색' }],
+  ['Burgundy', { en: 'Burgundy', ko: '버건디' }],
+  ['Hồng', { en: 'Pink', ko: '분홍색' }],
+  ['Hồng Pastel', { en: 'Pastel pink', ko: '파스텔 핑크' }],
+  ['Cam', { en: 'Orange', ko: '주황색' }],
+  ['Vàng', { en: 'Yellow', ko: '노란색' }],
+  ['Vàng Nhạt', { en: 'Pale yellow', ko: '연노란색' }],
+  ['Vàng Gold', { en: 'Gold', ko: '금색' }],
+  ['Xanh Dương', { en: 'Blue', ko: '파란색' }],
+  ['Xanh Lam', { en: 'Azure', ko: '하늘색' }],
+  ['Xanh Ngọc', { en: 'Turquoise', ko: '청록색' }],
+  ['Xanh Lá', { en: 'Green', ko: '초록색' }],
+  ['Xanh Tím', { en: 'Blue-violet', ko: '청보라색' }],
+  ['Tím', { en: 'Purple', ko: '보라색' }],
+  ['Nâu', { en: 'Brown', ko: '갈색' }],
+  ['Xám', { en: 'Gray', ko: '회색' }],
+  ['Đen', { en: 'Black', ko: '검은색' }],
+  ['Bạc', { en: 'Silver', ko: '은색' }],
+  ['Ivory', { en: 'Ivory', ko: '아이보리' }],
+  ['Champagne', { en: 'Champagne', ko: '샴페인색' }],
+  ['Áo dài', { en: 'Ao dai', ko: '아오자이' }],
+  ['Váy ngắn', { en: 'Mini dress', ko: '미니 드레스' }],
+  ['Đầm dạ hội', { en: 'Evening gown', ko: '이브닝 드레스' }],
+  ['Đầm NTK', { en: 'Designer gown', ko: '디자이너 가운' }],
+  ['Đầm thiết kế', { en: 'Designer dress', ko: '디자이너 드레스' }],
+  ['Đầm ngắn', { en: 'Short dress', ko: '짧은 드레스' }],
+  ['Vest nữ', { en: 'Women’s suit', ko: '여성 정장' }],
+  ['Đầm luxury', { en: 'Luxury dress', ko: '럭셔리 드레스' }],
+  ['Cúp ngực', { en: 'Strapless', ko: '스트랩리스' }],
+  ['Choàng cổ', { en: 'Scarf neckline', ko: '스카프 넥라인' }],
+  ['Chéo cổ', { en: 'Cross neckline', ko: '크로스 넥라인' }],
+  ['Chéo vai', { en: 'Cross-shoulder', ko: '크로스 숄더' }],
+  ['Che vai', { en: 'Covered shoulders', ko: '어깨를 덮는 디자인' }],
+  ['Bẹt vai', { en: 'Off-the-shoulder', ko: '오프숄더' }],
+  ['Lệch vai', { en: 'One-shoulder', ko: '원숄더' }],
+  ['Cổ yếm', { en: 'Halter neck', ko: '홀터넥' }],
+  ['Xẻ chân', { en: 'Leg slit', ko: '다리 슬릿' }],
+  ['Xẻ tà', { en: 'Skirt slit', ko: '스커트 슬릿' }],
+  ['Hở lưng', { en: 'Open back', ko: '오픈백' }],
+  ['Đuôi cá', { en: 'Mermaid', ko: '머메이드' }],
+]);
+
+export function getProductFilterLabel(value: string, language: FilterLanguage): string {
+  return language === 'vi' ? value : labels.get(value)?.[language] ?? value;
+}

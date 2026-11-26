@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { X } from 'lucide-react';
+import { getProductFilterLabel } from '@/modules/product/constants/product-filter-labels';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   buildGroupedLoaiFilterOptions,
@@ -23,7 +24,7 @@ export function ProductLoaiFilter({
   onClear,
   compact = false,
 }: ProductLoaiFilterProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const groups = useMemo(
     () => buildGroupedLoaiFilterOptions(availableTags),
@@ -70,7 +71,7 @@ export function ProductLoaiFilter({
                       : 'border-gray-200 bg-white text-gray-700 hover:border-[#b8465f]/40 hover:text-[#b8465f]'
                   }`}
                 >
-                  {tag}
+                  {getProductFilterLabel(tag, language)}
                 </button>
               );
             })}
@@ -89,7 +90,7 @@ interface SelectedLoaiChipsProps {
 
 /** Thanh loại đã chọn — hiển thị phía trên lưới sản phẩm. */
 export function SelectedLoaiChips({ selectedTags, onToggle, onClear }: SelectedLoaiChipsProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ordered = useMemo(() => sortLoaiTags(selectedTags), [selectedTags]);
 
   if (!ordered.length) return null;
@@ -104,7 +105,7 @@ export function SelectedLoaiChips({ selectedTags, onToggle, onClear }: SelectedL
           onClick={() => onToggle(tag)}
           className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[#b8465f] shadow-sm ring-1 ring-[#b8465f]/20 hover:bg-rose-50"
         >
-          {tag}
+          {getProductFilterLabel(tag, language)}
           <X className="h-3 w-3" aria-hidden />
           <span className="sr-only">{t('filter.loaiRemove')}</span>
         </button>

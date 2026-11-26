@@ -19,6 +19,8 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Bộ lọc Màu sắc và Loại váy hiển thị tên lựa chọn bằng tiếng Anh và tiếng Hàn trên trang danh sách sản phẩm.
+
 - **Commit `package-lock.json`:** CI và Docker build cài đúng phiên bản dependency như máy dev (trước đây thiếu lockfile nên CI cài plugin ESLint mới hơn và lệch mốc lint). Thêm / nâng dependency thì commit lockfile cùng thay đổi.
 - **CI lint (`.github/workflows/ci.yml`):** mỗi PR / push chạy `npm run lint:ci`, fail khi số lỗi hoặc cảnh báo ESLint vượt mốc trong `.eslint-baseline.json` — code cũ giữ nguyên, nhưng không thêm vi phạm mới. Dọn bớt thì chạy `node scripts/lint-baseline.mjs --update` để hạ mốc.
 - **Lint:** cảnh báo `no-console` (trừ `warn`/`error`); để mức cảnh báo vì `ProductCard` còn một `console.log` giữ chỗ cho nút thêm giỏ hàng.
