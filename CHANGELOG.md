@@ -7,6 +7,8 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Chi tiết đơn hiển thị ngày giờ nhận và trả của từng sản phẩm thuê.
+
 ### Fixed
 
 - **Đăng nhập bằng tài khoản nội bộ:** backend giờ từ chối tài khoản web-admin (nhân viên) ở website bằng 403; màn đăng nhập báo rõ "Tài khoản nội bộ không dùng để đăng nhập website…" thay vì lỗi chung. Đăng nhập Google hiện thông báo từ backend. Web-app không cần gửi header `X-Kygo-Client` (thiếu header = `web`).

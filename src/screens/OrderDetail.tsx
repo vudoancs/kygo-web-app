@@ -242,6 +242,12 @@ const OrderDetail = () => {
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">Số lượng: {line.quantity}</p>
+                      {line.rentalStartDate && line.rentalEndDate && (
+                        <div className="mt-1 text-sm text-gray-600">
+                          <div>Nhận {new Date(line.rentalStartDate).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} {line.pickupTime}</div>
+                          <div>Trả {new Date(line.rentalEndDate).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} {line.returnTime}</div>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-gray-900">{formatPrice(line.unitPrice)}</p>

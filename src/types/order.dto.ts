@@ -21,6 +21,10 @@ export interface OrderLineDto {
   unitPrice: number;
   /** Thành tiền dòng */
   lineTotal?: number;
+  rentalStartDate?: string;
+  rentalEndDate?: string;
+  pickupTime?: string;
+  returnTime?: string;
   type?: OrderLineType;
   images?: string[];
 }
