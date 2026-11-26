@@ -7,6 +7,7 @@ import { Trash2, ShoppingBag } from 'lucide-react';
 import { useAppContext } from '@/modules/app-state';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ProductImage } from '@/components/ProductImage';
+import { webCheckoutPricing } from '@/libs/web-checkout-pricing';
 import { useCartPriceRefresh } from '@/hooks/use-cart-price-refresh';
 import { DEFAULT_PICKUP_TIME, DEFAULT_RETURN_TIME } from '@/libs/vn-date';
 
@@ -24,13 +25,7 @@ const Cart = () => {
     }).format(price);
   };
 
-  const calculateSubtotal = () => {
-    return cart.reduce((sum, item) => sum + item.price, 0);
-  };
-
-  const calculateTotal = () => {
-    return calculateSubtotal();
-  };
+  const { subtotal, discount, total } = webCheckoutPricing(cart);
 
   if (cart.length === 0) {
     return (
@@ -57,7 +52,7 @@ const Cart = () => {
       <h1 className="font-serif text-3xl font-bold text-gray-900 mb-8">Giỏ hàng</h1>
       {priceRefresh.changedCount > 0 ? (
         <div role="status" className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Giá thuê của một số sản phẩm đã được cập nhật theo chương trình giảm giá hiện tại.
+          Giá của một số sản phẩm đã được cập nhật.
         </div>
       ) : null}
 
@@ -184,13 +179,19 @@ const Cart = () => {
             <div className="space-y-3 mb-4 pb-4 border-b border-gray-200">
               <div className="flex justify-between text-gray-600">
                 <span>{t('cart.subtotal')}</span>
-                <span className="font-medium text-gray-900">{formatPrice(calculateSubtotal())}</span>
+                <span className="font-medium text-gray-900">{formatPrice(subtotal)}</span>
               </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>{t('cart.webBookingDiscount')}</span>
+                  <span>−{formatPrice(discount)}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between text-lg font-bold text-gray-900 mb-6">
               <span>{t('cart.total')}</span>
-              <span className="text-[#b8465f]">{formatPrice(calculateTotal())}</span>
+              <span className="text-[#b8465f]">{formatPrice(total)}</span>
             </div>
 
             <button

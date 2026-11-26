@@ -68,7 +68,7 @@ const ProductCardMobile: React.FC<ProductCardMobileProps> = ({ product }) => {
 
       {/* Promotion Text */}
       <p className="text-[10px] text-[#b8465f]">
-        Thuê 0đ khi mua Gói Ưu Đãi
+        {t('products.webBookingDiscount')}
       </p>
     </Link>
   );

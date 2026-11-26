@@ -43,6 +43,7 @@ export interface OrderDto {
   total: number;
   /** Đã thanh toán (payments − refunds) */
   paidAmount?: number;
+  discount?: number;
   /** Còn lại phải thanh toán */
   remainingAmount?: number;
   createdAt: string;

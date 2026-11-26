@@ -14,6 +14,7 @@ import type { CartItem } from '@/modules/app-state';
 
 export type OrderSuccessSummary = {
   items: CartItem[];
+  total: number;
   deliveryMethod: 'delivery' | 'pickup';
   address?: string;
   district?: string;
@@ -85,8 +86,6 @@ export function OrderSuccessDialog({
 }: OrderSuccessDialogProps) {
   if (!summary) return null;
 
-  const total = summary.items.reduce((sum, item) => sum + item.price, 0);
-
   return (
     <Dialog
       open={open}
@@ -152,7 +151,7 @@ export function OrderSuccessDialog({
             </div>
             <div className="mt-2 flex items-center justify-between border-t border-rose-100 pt-2 text-sm">
               <span className="text-gray-600">Tổng cộng</span>
-              <span className="font-bold text-[#b8465f]">{formatPrice(total)}</span>
+              <span className="font-bold text-[#b8465f]">{formatPrice(summary.total)}</span>
             </div>
           </div>
 

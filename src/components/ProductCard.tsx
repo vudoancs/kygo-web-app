@@ -14,7 +14,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
 
   const originalRentPrice =
     product.originalRentPricePerDay ?? product.originalRentPriceDanang;
@@ -115,7 +115,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
         {/* Promotion Text */}
         <p className="text-[9px] lg:text-[10px] text-[#b8465f] mb-2 lg:mb-3">
-          {language === 'vi' ? 'Thuê 0đ khi mua gói ưu đãi' : language === 'en' ? 'Free rental with package deals' : '패키지 구매 시 무료 대여'}
+          {t('products.webBookingDiscount')}
         </p>
 
         {/* Add to Cart Button */}

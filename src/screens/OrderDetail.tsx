@@ -272,6 +272,12 @@ const OrderDetail = () => {
                   {formatPrice(orderQuery.data.total)}
                 </span>
               </div>
+              {!!orderQuery.data.discount && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Giảm giá đơn hàng</span>
+                  <span>−{formatPrice(orderQuery.data.discount)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Đã thanh toán</span>
                 <span className="font-semibold text-emerald-700">
