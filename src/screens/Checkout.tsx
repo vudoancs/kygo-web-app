@@ -8,6 +8,7 @@ import { checkoutWeb } from '@/services/orders.service';
 import { fetchMyProfile } from '@/services/users.service';
 import { getErrorMessage, HttpError } from '@/services/http/errors';
 import { useQueryClient } from '@tanstack/react-query';
+import { webCheckoutPricing } from '@/libs/web-checkout-pricing';
 import { useCartPriceRefresh } from '@/hooks/use-cart-price-refresh';
 import { productKeys } from '@/hooks/use-products-query';
 import { isPublicApiConfigured } from '@/libs/env';
@@ -97,13 +98,7 @@ const Checkout = () => {
     }).format(price);
   };
 
-  const calculateSubtotal = () => {
-    return cart.reduce((sum, item) => sum + item.price, 0);
-  };
-
-  const calculateTotal = () => {
-    return calculateSubtotal();
-  };
+  const { subtotal, discount, total } = webCheckoutPricing(cart);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -150,7 +145,7 @@ const Checkout = () => {
 
     setSubmitting(true);
     try {
-      const snapshot: OrderSuccessSummary = {
+      const snapshot: Omit<OrderSuccessSummary, 'total'> = {
         items: cart.map((item) => ({ ...item })),
         deliveryMethod,
         address: formData.address,
@@ -158,7 +153,7 @@ const Checkout = () => {
         city: formData.city,
       };
 
-      await checkoutWeb({
+      const order = await checkoutWeb({
         items: cart.map((item) => ({
           productId: item.productId,
           quantity: 1,
@@ -183,7 +178,7 @@ const Checkout = () => {
         district: formData.district || undefined,
       });
 
-      setSuccessSummary(snapshot);
+      setSuccessSummary({ ...snapshot, total: order.total });
       setSuccessOpen(true);
       clearCart();
     } catch (err) {
@@ -191,7 +186,7 @@ const Checkout = () => {
         err instanceof HttpError &&
         (err.body?.code === 'ORDER_PRICE_STALE' || err.message === 'order.price_stale')
       ) {
-        // Giá thuê đã đổi (giảm giá bắt đầu/kết thúc) → tải lại giá, khách xem lại rồi đặt lại.
+        // Tải lại giá hiện hành để khách kiểm tra giỏ trước khi đặt lại.
         await queryClient.invalidateQueries({ queryKey: productKeys.all });
         alert('Giá đã thay đổi, vui lòng kiểm tra lại giỏ hàng trước khi đặt hàng.');
       } else {
@@ -240,7 +235,7 @@ const Checkout = () => {
       <h1 className="font-serif text-3xl font-bold text-gray-900 mb-8">Thanh toán</h1>
       {priceRefresh.changedCount > 0 ? (
         <div role="status" className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Giá thuê của một số sản phẩm đã được cập nhật theo chương trình giảm giá hiện tại.
+          Giá của một số sản phẩm đã được cập nhật.
         </div>
       ) : null}
 
@@ -487,8 +482,17 @@ const Checkout = () => {
               <div className="space-y-3 mb-4 pb-4 border-b border-gray-200">
                 <div className="flex justify-between text-gray-600">
                   <span>Tạm tính</span>
-                  <span className="font-medium text-gray-900">{formatPrice(calculateSubtotal())}</span>
+                  <span className="font-medium text-gray-900">{formatPrice(subtotal)}</span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Ưu đãi đặt web 12%</span>
+                    <span>−{formatPrice(discount)}</span>
+                  </div>
+                )}
+                {cart.some((item) => item.type === 'rent' && item.rentDuration === 1) && (
+                  <p className="text-sm text-gray-600">Giá thuê 1 ngày đã có ưu đãi riêng.</p>
+                )}
                 <div className="flex justify-between text-gray-600">
                   <span>Phí vận chuyển</span>
                   <span className={`font-medium ${deliveryMethod === 'delivery' ? 'text-gray-900' : 'text-green-600'}`}>
@@ -499,7 +503,7 @@ const Checkout = () => {
 
               <div className="flex justify-between text-lg font-bold text-gray-900 mb-6">
                 <span>Tổng cộng</span>
-                <span className="text-[#b8465f]">{formatPrice(calculateTotal())}</span>
+                <span className="text-[#b8465f]">{formatPrice(total)}</span>
               </div>
 
               <button
