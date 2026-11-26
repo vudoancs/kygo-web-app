@@ -31,6 +31,7 @@ import {
   buildGroupedLoaiFilterOptions,
   sortLoaiTags,
 } from '@/modules/product/constants/product-loai-tags';
+import { getProductFilterLabel } from '@/modules/product/constants/product-filter-labels';
 import { buildProductColorFilterOptions } from '@/modules/product/constants/product-colors';
 import { ProductLoaiFilter, SelectedLoaiChips } from '@/components/ProductLoaiFilter';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -63,7 +64,7 @@ const ProductListing = () => {
   const searchParamsString = searchParams.toString();
   const skipUrlReadRef = useRef(false);
   const urlHydratedRef = useRef(true);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const isApi = isPublicApiConfigured();
   const onPromotionParam = searchParams.get('onPromotion');
   const isOnPromotionCollection =
@@ -304,8 +305,8 @@ const ProductListing = () => {
 
   const quickLoaiLabel = useMemo(() => {
     if (selectedTags.length === 0) return t('filter.all');
-    return sortLoaiTags(selectedTags, tagOptions).join(', ');
-  }, [selectedTags, tagOptions, t]);
+    return sortLoaiTags(selectedTags, tagOptions).map((tag) => getProductFilterLabel(tag, language)).join(', ');
+  }, [selectedTags, tagOptions, t, language]);
 
   const quickColorValue =
     selectedColors.length === 0 ? FILTER_ALL_VALUE : selectedColors[0];
@@ -718,7 +719,9 @@ const ProductListing = () => {
               className="h-auto w-full justify-between border-gray-300 py-2.5 text-left text-sm text-gray-800 hover:border-[#b8465f] hover:text-[#b8465f]"
             >
               <span className="truncate">
-                {selectedColors.length ? `Đã chọn: ${selectedColors.join(', ')}` : 'Chọn màu sắc'}
+                {selectedColors.length
+                  ? `${t('filter.colorSelected')}: ${selectedColors.map((color) => getProductFilterLabel(color, language)).join(', ')}`
+                  : t('filter.colorChoose')}
               </span>
               <span
                 className={`ml-3 inline-flex min-w-7 items-center justify-center rounded-full px-2 py-0.5 text-xs ${
@@ -731,13 +734,13 @@ const ProductListing = () => {
           </PopoverTrigger>
           <PopoverContent className="w-80 p-0" align="start">
             <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 py-2">
-              <p className="text-xs font-medium text-gray-600">Chọn một hoặc nhiều màu</p>
+              <p className="text-xs font-medium text-gray-600">{t('filter.colorMultiHint')}</p>
               <button
                 type="button"
                 className="text-xs font-medium text-[#b8465f] hover:underline"
                 onClick={() => setSelectedColors([])}
               >
-                Xóa
+                {t('filter.colorClear')}
               </button>
             </div>
             <div className="max-h-64 space-y-2 overflow-y-auto p-3">
@@ -750,11 +753,11 @@ const ProductListing = () => {
                       checked={selectedColors.includes(c)}
                       onChange={() => toggleColor(c)}
                     />
-                    <span className="text-sm text-gray-800">{c}</span>
+                    <span className="text-sm text-gray-800">{getProductFilterLabel(c, language)}</span>
                   </label>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">Chưa có dữ liệu màu để lọc.</p>
+                <p className="text-sm text-gray-500">{t('filter.noColors')}</p>
               )}
             </div>
           </PopoverContent>
@@ -934,7 +937,7 @@ const ProductListing = () => {
                 <SelectItem value={FILTER_ALL_VALUE}>{t('filter.all')}</SelectItem>
                 {colorOptions.map((color) => (
                   <SelectItem key={color} value={color}>
-                    {color}
+                    {getProductFilterLabel(color, language)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1013,7 +1016,7 @@ const ProductListing = () => {
                                 checked={selectedTags.includes(tag)}
                                 onChange={() => toggleTag(tag)}
                               />
-                              <span className="text-sm text-gray-800">{tag}</span>
+                              <span className="text-sm text-gray-800">{getProductFilterLabel(tag, language)}</span>
                             </label>
                           ))}
                         </div>
